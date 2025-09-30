@@ -1,10 +1,6 @@
-# Project Template
+# Smart Contracts
 
-This repository provides a minimal, pragmatic template:
-- British English across docs and messages
-- GitHub Actions CI
-- CODEOWNERS, PR/Issue templates
-- Dependabot
+This repository will host the blockchain smart contracts, tests, and deployment scripts.
 
-## Getting started
-Clone, create your feature branch, and raise a pull request.
+- British English across documentation
+- Add Foundry/Hardhat later, along with CI and ABI packaging

@@ -1,0 +1,5 @@
+* @arras-labs/reviewers
+/docs/ @arras-labs/docs
+/infra/ @arras-labs/dev-devops
+/web/ @arras-labs/dev-frontend
+/api/ @arras-labs/dev-backend

@@ -1,28 +1,40 @@
 # Contracts
 
-## Overview
-Smart contracts for the project. Includes source code, tests, and deployment scripts. ABIs will be published for client consumption.
+## Purpose
+Author and test the smart contracts. Produce **ABIs** as build artefacts for other services.
 
-## Scope
-- Author and test contracts
-- Produce ABIs for other services
-- Prepare deployment artefacts for each environment
+## Responsibilities
+- Contract source and tests
+- Deployment scripts and configuration per environment
+- Publishing **ABIs** (and optionally bytecode) for clients
 
-## Tech stack
-TBD (e.g., Foundry or Hardhat, Solidity)
+## Interfaces (in / out)
+- **Out:** ABIs published as build or release artefacts
+- **In:** Chain RPC (devnet/testnet/mainnet)
 
-## Structure
-- `src/` contract sources
-- `test/` unit and integration tests
-- `scripts/` deployment and maintenance scripts
-- `out/` build outputs (ignored in VCS unless noted)
+## Interactions with other repositories
+- **web-app** consumes ABIs for read-only decoding; **writes** go via **backend-api**
+- **backend-api** uses ABIs to encode/decode on-chain calls and events
+- **deploy** stores runbooks/manifests that reference deployed addresses
 
-## Getting started
-- Install the chosen toolchain
-- Build and run tests locally
+## Directory layout
+- `src/` Solidity contracts
+- `test/` unit/integration tests
+- `scripts/` deployment scripts
+- `out/` build outputs (ignored unless noted)
 
-## CI
-Build and test on pull requests and pushes to `main`.
+## Local development
+1. Install the chosen toolchain (e.g. **Foundry** or **Hardhat**)
+2. Build and run tests locally
+3. On release, publish ABIs as artefacts
+
+## CI/CD
+- On PR/push: build & test
+- On tag (release): upload **ABIs** as release artefacts for `web-app` and `backend-api`
+
+## Versioning & releases
+- Tag contract releases (e.g. `contracts-v0.1.0`)
+- Record deployed addresses per environment
 
 ## Security
-Report vulnerabilities privately to the maintainers. Do not disclose details publicly before a coordinated fix.
+Report vulnerabilities privately to the maintainers. Do not disclose before a coordinated fix.

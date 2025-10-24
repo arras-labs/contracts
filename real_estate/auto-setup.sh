@@ -128,7 +128,6 @@ if [ "$BLOCKCHAIN" = "ganache" ]; then
         docker-compose up -d
         cd ../..
         print_success "Ganache avviato su http://172.30.32.1:7545"
-        print_success "Dashboard: http://localhost:7545"
         sleep 3
     else
         print_warning "Docker non trovato. Avvia Ganache manualmente!"

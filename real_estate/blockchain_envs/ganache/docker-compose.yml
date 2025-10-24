@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   ganache:
     image: trufflesuite/ganache:latest
@@ -18,25 +16,30 @@ services:
     volumes:
       - ganache-data:/ganache-data
 
-  # Opzionale: frontend container per sviluppo
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: real-estate-frontend
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - VITE_GANACHE_URL=http://ganache:8545
-      - VITE_CONTRACT_ADDRESS=${VITE_CONTRACT_ADDRESS}
-    depends_on:
-      - ganache
-    networks:
-      - blockchain-network
-    command: npm run dev -- --host
+  # NOTA: Per lo sviluppo, esegui il frontend manualmente con:
+  #   cd ../../frontend && npm run dev
+  #
+  # Decommentare solo per produzione:
+  # frontend:
+  #   build:
+  #     context: ../../frontend
+  #     dockerfile: Dockerfile
+  #   container_name: real-estate-frontend
+  #   ports:
+  #     - "5173:5173"
+  #   volumes:
+  #     - ../../frontend:/app
+  #     - /app/node_modules
+  #   environment:
+  #     - VITE_GANACHE_URL=http://ganache:8545
+  #     - VITE_CONTRACT_ADDRESS=0x8A5245157f1909904ceD3ff440d3d2D2352b9253
+  #     - VITE_CHAIN_ID=1337
+  #     - VITE_NETWORK_NAME=Ganache Local
+  #   depends_on:
+  #     - ganache
+  #   networks:
+  #     - blockchain-network
+  #   command: npm run dev -- --host
 
 networks:
   blockchain-network:

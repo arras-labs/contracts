@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Polygon Monitor - Real Estate DApp</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        color: #667eea;
+        margin-bottom: 10px;
+        font-size: 2.5em;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 1.2em;
+      }
+      .card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+      }
+      .card h2 {
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .icon {
+        font-size: 1.5em;
+      }
+      .link {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        margin: 5px;
+        transition: all 0.3s;
+      }
+      .link:hover {
+        background: #764ba2;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+      .status {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        margin-left: 10px;
+      }
+      .status.active {
+        background: #d4edda;
+        color: #155724;
+      }
+      .info {
+        background: #e7f3ff;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+      code {
+        background: #f4f4f4;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔷 Polygon Monitor</h1>
+      <p class="subtitle">Real Estate DApp - Blockchain Monitoring Dashboard</p>
+
+      <div class="card">
+        <h2>
+          <span class="icon">🌐</span> Polygon Amoy Testnet
+          <span class="status active">ATTIVO</span>
+        </h2>
+        <p>Rete di test Polygon attualmente connessa</p>
+        <div style="margin-top: 15px">
+          <a href="https://amoy.polygonscan.com/" target="_blank" class="link"
+            >📊 Apri PolygonScan (Amoy)</a
+          >
+          <a
+            href="https://faucet.polygon.technology/"
+            target="_blank"
+            class="link"
+            >💧 Ottieni POL Test</a
+          >
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2><span class="icon">📈</span> Explorer Links</h2>
+          <ul style="list-style: none; padding: 10px 0">
+            <li style="margin: 10px 0">
+              <strong>Amoy Testnet:</strong><br />
+              <a href="https://amoy.polygonscan.com/" target="_blank"
+                >amoy.polygonscan.com</a
+              >
+            </li>
+            <li style="margin: 10px 0">
+              <strong>Mumbai Testnet:</strong><br />
+              <a href="https://mumbai.polygonscan.com/" target="_blank"
+                >mumbai.polygonscan.com</a
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2><span class="icon">🔧</span> RPC Endpoints</h2>
+          <ul style="list-style: none; padding: 10px 0">
+            <li style="margin: 10px 0">
+              <strong>Amoy:</strong><br />
+              <code>https://rpc-amoy.polygon.technology</code>
+            </li>
+            <li style="margin: 10px 0">
+              <strong>Chain ID:</strong> <code>80002</code>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📝</span> Log Viewer Docker</h2>
+        <p>Visualizza i log di tutti i container Docker in tempo reale:</p>
+        <a href="http://localhost:9999" target="_blank" class="link"
+          >🔍 Apri Dozzle (Log Viewer)</a
+        >
+      </div>
+
+      <div class="info">
+        <strong>ℹ️ Nota:</strong> Polygon è una blockchain pubblica, quindi non
+        viene eseguita localmente. Questo dashboard fornisce link rapidi per
+        monitorare le transazioni sulla testnet tramite PolygonScan.
+      </div>
+
+      <div class="card" style="margin-top: 20px">
+        <h2><span class="icon">🏠</span> Contratto Real Estate</h2>
+        <p>Per vedere il tuo contratto deployato:</p>
+        <ol style="margin: 15px 0 15px 20px">
+          <li>Copia l'indirizzo del contratto da <code>frontend/.env</code></li>
+          <li>
+            Vai su
+            <a href="https://amoy.polygonscan.com/" target="_blank"
+              >PolygonScan Amoy</a
+            >
+          </li>
+          <li>Incolla l'indirizzo nella barra di ricerca</li>
+          <li>Visualizza transazioni, eventi e interazioni</li>
+        </ol>
+      </div>
+    </div>
+  </body>
+</html>

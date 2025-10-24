@@ -22,3 +22,6 @@ artifacts
 ganache-data
 
 docs
+
+/blockchain_envs/polygon/logs
+/blockchain_envs/ganache/logs

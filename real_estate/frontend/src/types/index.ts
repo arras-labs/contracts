@@ -3,12 +3,30 @@ export interface Property {
   name: string;
   description: string;
   location: string;
-  price: bigint;
+  totalValueUSD: bigint; // Valore totale in USD
   area: bigint;
   owner: string;
-  isForSale: boolean;
   imageUrl: string;
   listedTimestamp: bigint;
+  totalTokens: bigint; // Totale token disponibili
+  tokensSold: bigint; // Token già venduti
+  isActive: boolean; // Pool attiva o no
+}
+
+export interface PoolInfo {
+  totalTokens: bigint;
+  tokensSold: bigint;
+  tokensAvailable: bigint;
+  totalValueUSD: bigint;
+  currentValueUSD: bigint;
+  percentageComplete: bigint;
+  isActive: boolean;
+  investors: string[];
+}
+
+export interface Investment {
+  property: Property;
+  tokensOwned: bigint;
 }
 
 export interface WalletState {

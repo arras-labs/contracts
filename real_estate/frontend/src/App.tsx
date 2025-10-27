@@ -4,6 +4,7 @@ import { useWeb3 } from "./hooks/useWeb3";
 import { Header } from "./components/Header";
 import { PropertyCard } from "./components/PropertyCard";
 import { ListPropertyForm } from "./components/ListPropertyForm";
+import { TokenPurchaseModal } from "./components/TokenPurchaseModal";
 
 function App() {
   const {
@@ -12,25 +13,38 @@ function App() {
     contractReady,
     connectWallet,
     disconnectWallet,
-    getPropertiesForSale,
+    getActiveProperties,
     getMyProperties,
-    buyProperty,
+    getMyInvestments,
+    buyTokens,
     listProperty,
-    setForSale,
-    removeFromSale,
+    deactivatePool,
+    reactivatePool,
+    calculateTokenPriceETH,
+    TOKEN_PRICE_USD,
+    USD_TO_ETH_RATE,
   } = useWeb3();
 
   const [showListForm, setShowListForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"all" | "my">("all");
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
+    null
+  );
+  const [activeTab, setActiveTab] = useState<"all" | "my" | "investments">(
+    "all"
+  );
   const [properties, setProperties] = useState<Property[]>([]);
   const [myProperties, setMyProperties] = useState<Property[]>([]);
+  const [myInvestments, setMyInvestments] = useState<Property[]>([]);
 
   // Carica le proprietà
   const loadProperties = async () => {
-    const allProps = await getPropertiesForSale();
+    const allProps = await getActiveProperties();
     const myProps = await getMyProperties();
+    const investments = await getMyInvestments();
     setProperties(allProps);
     setMyProperties(myProps);
+    setMyInvestments(investments.map((inv) => inv.property));
   };
 
   useEffect(() => {
@@ -39,9 +53,19 @@ function App() {
     }
   }, [walletState.isConnected, contractReady]);
 
-  const handleBuyProperty = async (property: Property) => {
-    const success = await buyProperty(property.id, property.price);
+  const handleBuyTokens = (property: Property) => {
+    setSelectedProperty(property);
+    setShowTokenModal(true);
+  };
+
+  const handleConfirmTokenPurchase = async (
+    propertyId: bigint,
+    tokenAmount: number
+  ) => {
+    const success = await buyTokens(propertyId, tokenAmount);
     if (success) {
+      setShowTokenModal(false);
+      setSelectedProperty(null);
       await loadProperties();
     }
   };
@@ -50,7 +74,7 @@ function App() {
     name: string;
     description: string;
     location: string;
-    price: string;
+    totalValueUSD: string;
     area: string;
     imageUrl: string;
   }) => {
@@ -58,7 +82,7 @@ function App() {
       data.name,
       data.description,
       data.location,
-      data.price,
+      data.totalValueUSD,
       data.area,
       data.imageUrl
     );
@@ -68,25 +92,28 @@ function App() {
     }
   };
 
-  const handleSetForSale = async (property: Property) => {
-    // Chiedi il nuovo prezzo all'utente
-    const newPriceStr = prompt("Inserisci il nuovo prezzo in ETH:", "1.0");
-    if (!newPriceStr) return;
-
-    const success = await setForSale(property.id, newPriceStr);
+  const handleDeactivatePool = async (property: Property) => {
+    const success = await deactivatePool(property.id);
     if (success) {
       await loadProperties();
     }
   };
 
-  const handleRemoveFromSale = async (property: Property) => {
-    const success = await removeFromSale(property.id);
+  const handleReactivatePool = async (property: Property) => {
+    const success = await reactivatePool(property.id);
     if (success) {
       await loadProperties();
     }
   };
 
-  const displayProperties = activeTab === "all" ? properties : myProperties;
+  let displayProperties: Property[] = [];
+  if (activeTab === "all") {
+    displayProperties = properties;
+  } else if (activeTab === "my") {
+    displayProperties = myProperties;
+  } else {
+    displayProperties = myInvestments;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -127,7 +154,7 @@ function App() {
                       : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  Tutte le Proprieta ({properties.length})
+                  Tutte le Pool ({properties.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("my")}
@@ -137,14 +164,24 @@ function App() {
                       : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  Le Mie Proprieta ({myProperties.length})
+                  Le Mie Proprietà ({myProperties.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("investments")}
+                  className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                    activeTab === "investments"
+                      ? "bg-blue-600 text-white shadow-lg"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  I Miei Investimenti ({myInvestments.length})
                 </button>
               </div>
               <button
                 onClick={() => setShowListForm(true)}
                 className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                + Aggiungi Proprieta
+                + Crea Nuova Pool
               </button>
             </div>
 
@@ -158,8 +195,10 @@ function App() {
                 <div className="bg-white rounded-lg shadow-xl p-12 max-w-md mx-auto">
                   <p className="text-gray-600 text-lg">
                     {activeTab === "all"
-                      ? "Nessuna proprieta disponibile"
-                      : "Non possiedi ancora nessuna proprieta"}
+                      ? "Nessuna pool disponibile"
+                      : activeTab === "my"
+                      ? "Non hai ancora creato nessuna pool"
+                      : "Non hai ancora investito in nessuna pool"}
                   </p>
                 </div>
               </div>
@@ -173,9 +212,10 @@ function App() {
                       property.owner.toLowerCase() ===
                       walletState.account?.toLowerCase()
                     }
-                    onBuy={handleBuyProperty}
-                    onSetForSale={handleSetForSale}
-                    onRemoveFromSale={handleRemoveFromSale}
+                    tokenPriceUSD={TOKEN_PRICE_USD}
+                    onBuyTokens={handleBuyTokens}
+                    onDeactivatePool={handleDeactivatePool}
+                    onReactivatePool={handleReactivatePool}
                   />
                 ))}
               </div>
@@ -189,6 +229,25 @@ function App() {
           onSubmit={handleListProperty}
           onCancel={() => setShowListForm(false)}
           loading={loading}
+          tokenPriceUSD={TOKEN_PRICE_USD}
+          usdToEthRate={USD_TO_ETH_RATE}
+        />
+      )}
+
+      {showTokenModal && selectedProperty && (
+        <TokenPurchaseModal
+          property={selectedProperty}
+          onPurchase={handleConfirmTokenPurchase}
+          onCancel={() => {
+            setShowTokenModal(false);
+            setSelectedProperty(null);
+          }}
+          loading={loading}
+          tokenPriceUSD={TOKEN_PRICE_USD}
+          tokenPriceETH={calculateTokenPriceETH()}
+          availableTokens={Number(
+            selectedProperty.totalTokens - selectedProperty.tokensSold
+          )}
         />
       )}
     </div>

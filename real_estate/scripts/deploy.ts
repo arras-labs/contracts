@@ -17,6 +17,7 @@ async function main() {
 
   // NOTA: I prezzi ora sono in USD (numeri interi), non più in ETH!
   // Ogni token vale $50, quindi il valore totale deve essere multiplo di 50
+  // estimatedYield è in centesimi di percentuale (es: 500 = 5.00% annuo)
   const properties = [
     {
       name: "Villa Moderna con Piscina",
@@ -27,6 +28,7 @@ async function main() {
       area: 350,
       imageUrl:
         "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800",
+      estimatedYield: 450, // 4.5% annuo
     },
     {
       name: "Appartamento Centro Storico",
@@ -37,6 +39,7 @@ async function main() {
       area: 120,
       imageUrl:
         "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      estimatedYield: 550, // 5.5% annuo
     },
     {
       name: "Attico di Lusso",
@@ -47,6 +50,7 @@ async function main() {
       area: 280,
       imageUrl:
         "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
+      estimatedYield: 400, // 4.0% annuo
     },
     {
       name: "Casale in Campagna",
@@ -57,6 +61,7 @@ async function main() {
       area: 400,
       imageUrl:
         "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      estimatedYield: 600, // 6.0% annuo
     },
     {
       name: "Loft Design",
@@ -67,6 +72,7 @@ async function main() {
       area: 180,
       imageUrl:
         "https://images.unsplash.com/photo-1502672260066-6bc35f0b3764?w=800",
+      estimatedYield: 500, // 5.0% annuo
     },
   ];
 
@@ -77,14 +83,16 @@ async function main() {
       property.location,
       property.totalValueUSD,
       property.area,
-      property.imageUrl
+      property.imageUrl,
+      property.estimatedYield
     );
     await tx.wait();
     const tokens = Math.floor(property.totalValueUSD / 50);
+    const yieldPercent = (property.estimatedYield / 100).toFixed(2);
     console.log(
       `✅ Aggiunta: ${
         property.name
-      } - $${property.totalValueUSD.toLocaleString()} (${tokens} token)`
+      } - $${property.totalValueUSD.toLocaleString()} (${tokens} token, ${yieldPercent}% rendimento)`
     );
   }
 

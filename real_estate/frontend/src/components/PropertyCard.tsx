@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { Property } from "../types";
 
 interface PropertyCardProps {
@@ -17,6 +18,7 @@ export const PropertyCard = ({
   isOwner = false,
   tokenPriceUSD,
 }: PropertyCardProps) => {
+  const navigate = useNavigate();
   // Calcola la percentuale di completamento
   const percentageComplete =
     property.totalTokens > 0
@@ -154,6 +156,14 @@ export const PropertyCard = ({
 
         {/* Pulsanti azione */}
         <div className="space-y-2">
+          {/* Bottone Dettagli - sempre visibile */}
+          <button
+            onClick={() => navigate(`/property/${property.id}`)}
+            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+            📊 Visualizza Dettagli
+          </button>
+
           {!isOwner &&
             property.isActive &&
             tokensAvailable > 0 &&

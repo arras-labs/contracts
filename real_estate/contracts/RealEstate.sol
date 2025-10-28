@@ -26,6 +26,18 @@ contract RealEstate is ERC721, Ownable {
         uint256 totalTokens; // Totale token disponibili per questa proprietà
         uint256 tokensSold; // Token già venduti
         bool isActive; // True se la pool è attiva
+        uint256 estimatedAnnualYield; // Rendimento annuale stimato in percentuale (es: 500 = 5%)
+    }
+    
+    // Struct per i documenti della proprietà
+    struct Document {
+        uint256 id;
+        uint256 propertyId;
+        string name;
+        string documentType; // es: "Contratto", "Perizia", "Planimetria", etc.
+        string ipfsHash; // Hash IPFS del documento
+        uint256 uploadDate;
+        address uploadedBy;
     }
     
     // Struct per tracciare gli investimenti in token
@@ -48,6 +60,11 @@ contract RealEstate is ERC721, Ownable {
     // Mapping per verificare se un indirizzo è già investitore di una proprietà
     mapping(uint256 => mapping(address => bool)) public isInvestor;
     
+    // Documenti
+    uint256 private _documentIds;
+    mapping(uint256 => Document) public documents;
+    mapping(uint256 => uint256[]) public propertyDocuments; // propertyId => documentIds[]
+    
     // Eventi
     event PropertyListed(
         uint256 indexed propertyId, 
@@ -67,12 +84,24 @@ contract RealEstate is ERC721, Ownable {
         uint256 totalRaised
     );
     event PropertyDelisted(uint256 indexed propertyId);
+    event DocumentUploaded(
+        uint256 indexed documentId,
+        uint256 indexed propertyId,
+        string name,
+        string documentType,
+        address uploadedBy
+    );
+    event YieldUpdated(
+        uint256 indexed propertyId,
+        uint256 newYield
+    );
     
     constructor() ERC721("RealEstateNFT", "RENFT") Ownable(msg.sender) {}
     
     /**
      * @dev Lista una nuova proprietà immobiliare con pool di token
      * @param _totalValueUSD Valore totale in USD (prezzo immobile + spese gestione)
+     * @param _estimatedYield Rendimento annuale stimato in centesimi di percentuale (es: 500 = 5%)
      */
     function listProperty(
         string memory _name,
@@ -80,7 +109,8 @@ contract RealEstate is ERC721, Ownable {
         string memory _location,
         uint256 _totalValueUSD,
         uint256 _area,
-        string memory _imageUrl
+        string memory _imageUrl,
+        uint256 _estimatedYield
     ) public returns (uint256) {
         require(_totalValueUSD > 0, "Il valore deve essere maggiore di zero");
         require(_area > 0, "L'area deve essere maggiore di zero");
@@ -108,7 +138,8 @@ contract RealEstate is ERC721, Ownable {
             listedTimestamp: block.timestamp,
             totalTokens: totalTokens,
             tokensSold: 0,
-            isActive: true
+            isActive: true,
+            estimatedAnnualYield: _estimatedYield
         });
         
         emit PropertyListed(newPropertyId, _name, _totalValueUSD, totalTokens, msg.sender);
@@ -332,5 +363,66 @@ contract RealEstate is ERC721, Ownable {
      */
     function getTotalProperties() public view returns (uint256) {
         return _propertyIds;
+    }
+    
+    /**
+     * @dev Carica un documento per una proprietà (solo owner)
+     */
+    function uploadDocument(
+        uint256 _propertyId,
+        string memory _name,
+        string memory _documentType,
+        string memory _ipfsHash
+    ) public returns (uint256) {
+        require(_propertyId > 0 && _propertyId <= _propertyIds, "Proprieta non esistente");
+        require(ownerOf(_propertyId) == msg.sender, "Non sei il proprietario");
+        require(bytes(_ipfsHash).length > 0, "IPFS hash richiesto");
+        
+        _documentIds++;
+        uint256 newDocumentId = _documentIds;
+        
+        documents[newDocumentId] = Document({
+            id: newDocumentId,
+            propertyId: _propertyId,
+            name: _name,
+            documentType: _documentType,
+            ipfsHash: _ipfsHash,
+            uploadDate: block.timestamp,
+            uploadedBy: msg.sender
+        });
+        
+        propertyDocuments[_propertyId].push(newDocumentId);
+        
+        emit DocumentUploaded(newDocumentId, _propertyId, _name, _documentType, msg.sender);
+        
+        return newDocumentId;
+    }
+    
+    /**
+     * @dev Restituisce tutti i documenti di una proprietà
+     */
+    function getPropertyDocuments(uint256 _propertyId) public view returns (Document[] memory) {
+        require(_propertyId > 0 && _propertyId <= _propertyIds, "Proprieta non esistente");
+        
+        uint256[] memory documentIds = propertyDocuments[_propertyId];
+        Document[] memory propertyDocs = new Document[](documentIds.length);
+        
+        for (uint256 i = 0; i < documentIds.length; i++) {
+            propertyDocs[i] = documents[documentIds[i]];
+        }
+        
+        return propertyDocs;
+    }
+    
+    /**
+     * @dev Aggiorna il rendimento stimato (solo owner)
+     */
+    function updateEstimatedYield(uint256 _propertyId, uint256 _newYield) public {
+        require(_propertyId > 0 && _propertyId <= _propertyIds, "Proprieta non esistente");
+        require(ownerOf(_propertyId) == msg.sender, "Non sei il proprietario");
+        
+        properties[_propertyId].estimatedAnnualYield = _newYield;
+        
+        emit YieldUpdated(_propertyId, _newYield);
     }
 }

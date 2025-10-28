@@ -11,6 +11,17 @@ export interface Property {
   totalTokens: bigint; // Totale token disponibili
   tokensSold: bigint; // Token già venduti
   isActive: boolean; // Pool attiva o no
+  estimatedAnnualYield: bigint; // Rendimento stimato in centesimi % (500 = 5%)
+}
+
+export interface PropertyDocument {
+  id: bigint;
+  propertyId: bigint;
+  name: string;
+  documentType: string;
+  ipfsHash: string;
+  uploadDate: bigint;
+  uploadedBy: string;
 }
 
 export interface PoolInfo {
@@ -27,6 +38,12 @@ export interface PoolInfo {
 export interface Investment {
   property: Property;
   tokensOwned: bigint;
+}
+
+export interface YieldProjection {
+  year: number;
+  estimatedReturn: number;
+  cumulativeReturn: number;
 }
 
 export interface WalletState {

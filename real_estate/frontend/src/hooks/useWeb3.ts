@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrowserProvider, Contract, formatEther, parseEther } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, CHAIN_ID } from "../utils/constants";
-import type { Property, WalletState, PoolInfo, Investment } from "../types";
+import type {
+  Property,
+  WalletState,
+  PoolInfo,
+  Investment,
+  PropertyDocument,
+} from "../types";
 import toast from "react-hot-toast";
 
 declare global {
@@ -117,6 +123,7 @@ export const useWeb3 = () => {
         totalTokens: prop.totalTokens,
         tokensSold: prop.tokensSold,
         isActive: prop.isActive,
+        estimatedAnnualYield: prop.estimatedAnnualYield || 0,
       }));
     } catch (error) {
       console.error("❌ Errore nel recupero delle proprietà:", error);
@@ -147,6 +154,7 @@ export const useWeb3 = () => {
         totalTokens: prop.totalTokens,
         tokensSold: prop.tokensSold,
         isActive: prop.isActive,
+        estimatedAnnualYield: prop.estimatedAnnualYield || 0,
       }));
     } catch (error) {
       console.error("Errore nel recupero delle tue proprietà:", error);
@@ -180,6 +188,7 @@ export const useWeb3 = () => {
           totalTokens: prop.totalTokens,
           tokensSold: prop.tokensSold,
           isActive: prop.isActive,
+          estimatedAnnualYield: prop.estimatedAnnualYield || 0,
         },
         tokensOwned: tokenAmounts[index],
       }));
@@ -269,7 +278,8 @@ export const useWeb3 = () => {
     location: string,
     totalValueUSD: string,
     area: string,
-    imageUrl: string
+    imageUrl: string,
+    estimatedYield: string = "500" // Default 5.00%
   ) => {
     if (!contract) {
       toast.error("Contratto non inizializzato");
@@ -284,7 +294,8 @@ export const useWeb3 = () => {
         location,
         BigInt(totalValueUSD),
         BigInt(area),
-        imageUrl
+        imageUrl,
+        BigInt(estimatedYield)
       );
       toast.loading("Pubblicazione in corso...", { id: "list-tx" });
       await tx.wait();
@@ -388,6 +399,103 @@ export const useWeb3 = () => {
     };
   }, []);
 
+  // Get a single property by ID
+  const getProperty = async (propertyId: bigint): Promise<Property | null> => {
+    if (!contractReady || !contract) throw new Error("Contract non pronto");
+
+    try {
+      const prop = await contract.getProperty(propertyId);
+      return {
+        id: prop.id,
+        name: prop.name,
+        description: prop.description,
+        location: prop.location,
+        totalValueUSD: prop.totalValueUSD,
+        area: prop.area,
+        owner: prop.owner,
+        imageUrl: prop.imageUrl,
+        listedTimestamp: prop.listedTimestamp,
+        totalTokens: prop.totalTokens,
+        tokensSold: prop.tokensSold,
+        isActive: prop.isActive,
+        estimatedAnnualYield: prop.estimatedAnnualYield || 0,
+      };
+    } catch (error: any) {
+      console.error("Errore nel recupero proprietà:", error);
+      return null;
+    }
+  };
+
+  // Get property documents
+  const getPropertyDocuments = async (
+    propertyId: bigint
+  ): Promise<PropertyDocument[]> => {
+    if (!contractReady || !contract) throw new Error("Contract non pronto");
+
+    try {
+      const documents = await contract.getPropertyDocuments(propertyId);
+      return documents.map((doc: any) => ({
+        id: doc.id,
+        propertyId: doc.propertyId,
+        name: doc.name,
+        documentType: doc.documentType,
+        ipfsHash: doc.ipfsHash,
+        uploadDate: doc.uploadDate,
+        uploadedBy: doc.uploadedBy,
+      }));
+    } catch (error: any) {
+      console.error("Errore nel recupero documenti:", error);
+      throw new Error(error.message || "Errore nel recupero dei documenti");
+    }
+  };
+
+  // Upload property document
+  const uploadDocument = async (
+    propertyId: bigint,
+    name: string,
+    docType: string,
+    ipfsHash: string
+  ): Promise<boolean> => {
+    if (!contractReady || !contract) throw new Error("Contract non pronto");
+    if (!walletState.account) throw new Error("Wallet non connesso");
+
+    try {
+      // Il contratto accetta: propertyId, name, docType, ipfsHash
+      const tx = await contract.uploadDocument(
+        propertyId,
+        name,
+        docType,
+        ipfsHash
+      );
+      toast.loading("Caricamento documento in corso...");
+      await tx.wait();
+      toast.dismiss();
+      toast.success("Documento caricato con successo!");
+      return true;
+    } catch (error: any) {
+      toast.dismiss();
+      console.error("Errore nel caricamento documento:", error);
+      toast.error(error.message || "Errore nel caricamento del documento");
+      return false;
+    }
+  };
+
+  // Get tokens owned by an investor for a specific property
+  const getInvestorTokens = async (
+    propertyId: bigint,
+    investor: string
+  ): Promise<number> => {
+    if (!contractReady || !contract) throw new Error("Contract non pronto");
+
+    try {
+      const tokens = await contract.getInvestorTokens(propertyId, investor);
+      return Number(tokens);
+    } catch (error: any) {
+      console.error("Errore nel recupero token investitore:", error);
+      throw new Error(error.message || "Errore nel recupero dei token");
+    }
+  };
+
   return {
     walletState,
     loading,
@@ -397,12 +505,16 @@ export const useWeb3 = () => {
     getActiveProperties,
     getMyProperties,
     getMyInvestments,
+    getProperty,
     getPoolInfo,
     buyTokens,
     listProperty,
     deactivatePool,
     reactivatePool,
     calculateTokenPriceETH,
+    getPropertyDocuments,
+    uploadDocument,
+    getInvestorTokens,
     TOKEN_PRICE_USD,
     USD_TO_ETH_RATE,
   };

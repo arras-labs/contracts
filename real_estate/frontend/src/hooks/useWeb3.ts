@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrowserProvider, Contract, formatEther, parseEther } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, CHAIN_ID } from "../utils/constants";
+import { priceOracle } from "../services/priceOracle";
 import type {
   Property,
   WalletState,
@@ -16,9 +17,6 @@ declare global {
   }
 }
 
-// Tasso di cambio USD/ETH (in un'applicazione reale, questo dovrebbe venire da un oracle)
-// Per ora usiamo un valore approssimativo: 1 ETH = 2000 USD
-const USD_TO_ETH_RATE = 2000;
 const TOKEN_PRICE_USD = 50;
 
 export const useWeb3 = () => {
@@ -31,8 +29,33 @@ export const useWeb3 = () => {
   const [loading, setLoading] = useState(false);
   const [contract, setContract] = useState<Contract | null>(null);
   const [contractReady, setContractReady] = useState(false);
+  const [ethPrice, setEthPrice] = useState<number>(2000); // Fallback price
+  const [priceLoading, setPriceLoading] = useState(false);
 
-  // Inizializza il contratto
+  // Fetch ETH price periodically
+  useEffect(() => {
+    const updatePrice = async () => {
+      try {
+        setPriceLoading(true);
+        const priceData = await priceOracle.getETHPrice();
+        setEthPrice(priceData.usd);
+      } catch (error) {
+        console.error("Error fetching ETH price:", error);
+      } finally {
+        setPriceLoading(false);
+      }
+    };
+
+    // Initial fetch
+    updatePrice();
+
+    // Update every minute
+    const interval = setInterval(updatePrice, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Initialize contract
   const initContract = useCallback(async () => {
     if (!window.ethereum || !walletState.account) return;
 
@@ -47,17 +70,17 @@ export const useWeb3 = () => {
       setContract(contractInstance);
       setContractReady(true);
     } catch (error) {
-      console.error("❌ Errore inizializzazione contratto:", error);
-      toast.error("Errore durante l'inizializzazione del contratto");
+      console.error("❌ Error initializing contract:", error);
+      toast.error("Error initializing contract");
       setContractReady(false);
     }
   }, [walletState.account]);
 
-  // Connetti wallet
+  // Connect wallet
   const connectWallet = async () => {
     if (!window.ethereum) {
       toast.error(
-        "MetaMask non è installato! Installa MetaMask per continuare."
+        "MetaMask is not installed! Please install MetaMask to continue."
       );
       return;
     }
@@ -70,7 +93,7 @@ export const useWeb3 = () => {
       const balance = await provider.getBalance(accounts[0]);
 
       if (Number(network.chainId) !== CHAIN_ID) {
-        toast.error(`Cambia rete a Chain ID: ${CHAIN_ID}`);
+        toast.error(`Please switch to Chain ID: ${CHAIN_ID}`);
       }
 
       setWalletState({
@@ -80,16 +103,16 @@ export const useWeb3 = () => {
         isConnected: true,
       });
 
-      toast.success("Wallet connesso con successo!");
+      toast.success("Wallet connected successfully!");
     } catch (error: any) {
-      console.error("Errore connessione wallet:", error);
-      toast.error("Errore durante la connessione del wallet");
+      console.error("Error connecting wallet:", error);
+      toast.error("Error connecting wallet");
     } finally {
       setLoading(false);
     }
   };
 
-  // Disconnetti wallet
+  // Disconnect wallet
   const disconnectWallet = () => {
     setWalletState({
       account: null,
@@ -98,13 +121,13 @@ export const useWeb3 = () => {
       isConnected: false,
     });
     setContract(null);
-    toast.success("Wallet disconnesso");
+    toast.success("Wallet disconnected");
   };
 
-  // Ottieni tutte le proprietà attive
+  // Get all active properties
   const getActiveProperties = async (): Promise<Property[]> => {
     if (!contract) {
-      toast.error("Contratto non inizializzato");
+      toast.error("Contract not initialized");
       return [];
     }
 
@@ -126,16 +149,16 @@ export const useWeb3 = () => {
         estimatedAnnualYield: prop.estimatedAnnualYield || 0,
       }));
     } catch (error) {
-      console.error("❌ Errore nel recupero delle proprietà:", error);
-      toast.error("Errore nel caricamento delle proprietà");
+      console.error("❌ Error fetching properties:", error);
+      toast.error("Error loading properties");
       return [];
     }
   };
 
-  // Ottieni le proprietà dell'utente (dove è owner dell'NFT)
+  // Get user's properties (where they own the NFT)
   const getMyProperties = async (): Promise<Property[]> => {
     if (!contract || !walletState.account) {
-      toast.error("Contratto non inizializzato o wallet non connesso");
+      toast.error("Contract not initialized or wallet not connected");
       return [];
     }
 
@@ -157,16 +180,16 @@ export const useWeb3 = () => {
         estimatedAnnualYield: prop.estimatedAnnualYield || 0,
       }));
     } catch (error) {
-      console.error("Errore nel recupero delle tue proprietà:", error);
-      toast.error("Errore nel caricamento delle tue proprietà");
+      console.error("Error fetching your properties:", error);
+      toast.error("Error loading your properties");
       return [];
     }
   };
 
-  // Ottieni gli investimenti dell'utente (dove ha comprato token)
+  // Get user's investments (where they bought tokens)
   const getMyInvestments = async (): Promise<Investment[]> => {
     if (!contract || !walletState.account) {
-      toast.error("Contratto non inizializzato o wallet non connesso");
+      toast.error("Contract not initialized or wallet not connected");
       return [];
     }
 
@@ -193,16 +216,16 @@ export const useWeb3 = () => {
         tokensOwned: tokenAmounts[index],
       }));
     } catch (error) {
-      console.error("Errore nel recupero dei tuoi investimenti:", error);
-      toast.error("Errore nel caricamento dei tuoi investimenti");
+      console.error("Error fetching your investments:", error);
+      toast.error("Error loading your investments");
       return [];
     }
   };
 
-  // Ottieni informazioni sulla pool di una proprietà
+  // Get pool information for a property
   const getPoolInfo = async (propertyId: bigint): Promise<PoolInfo | null> => {
     if (!contract) {
-      toast.error("Contratto non inizializzato");
+      toast.error("Contract not initialized");
       return null;
     }
 
@@ -219,25 +242,25 @@ export const useWeb3 = () => {
         investors: poolInfo[7],
       };
     } catch (error) {
-      console.error("Errore nel recupero info pool:", error);
-      toast.error("Errore nel caricamento delle informazioni della pool");
+      console.error("Error fetching pool info:", error);
+      toast.error("Error loading pool information");
       return null;
     }
   };
 
-  // Calcola il prezzo di un token in ETH basato sul tasso USD/ETH
+  // Calculate token price in ETH based on current USD/ETH rate
   const calculateTokenPriceETH = (): string => {
-    const priceInETH = TOKEN_PRICE_USD / USD_TO_ETH_RATE;
+    const priceInETH = TOKEN_PRICE_USD / ethPrice;
     return priceInETH.toFixed(6);
   };
 
-  // Acquista token di una proprietà
+  // Buy property tokens
   const buyTokens = async (
     propertyId: bigint,
     tokenAmount: number
   ): Promise<boolean> => {
     if (!contract) {
-      toast.error("Contratto non inizializzato");
+      toast.error("Contract not initialized");
       return false;
     }
 
@@ -254,15 +277,15 @@ export const useWeb3 = () => {
           value: totalCost,
         }
       );
-      toast.loading("Acquisto in corso...", { id: "buy-tokens-tx" });
+      toast.loading("Purchase in progress...", { id: "buy-tokens-tx" });
       await tx.wait();
-      toast.success(`${tokenAmount} token acquistati con successo!`, {
+      toast.success(`${tokenAmount} tokens purchased successfully!`, {
         id: "buy-tokens-tx",
       });
       return true;
     } catch (error: any) {
-      console.error("Errore nell'acquisto token:", error);
-      toast.error(error.reason || "Errore durante l'acquisto", {
+      console.error("Error purchasing tokens:", error);
+      toast.error(error.reason || "Error during purchase", {
         id: "buy-tokens-tx",
       });
       return false;
@@ -271,7 +294,7 @@ export const useWeb3 = () => {
     }
   };
 
-  // Lista una nuova proprietà
+  // List a new property
   const listProperty = async (
     name: string,
     description: string,
@@ -282,7 +305,7 @@ export const useWeb3 = () => {
     estimatedYield: string = "500" // Default 5.00%
   ) => {
     if (!contract) {
-      toast.error("Contratto non inizializzato");
+      toast.error("Contract not initialized");
       return false;
     }
 
@@ -297,13 +320,13 @@ export const useWeb3 = () => {
         imageUrl,
         BigInt(estimatedYield)
       );
-      toast.loading("Pubblicazione in corso...", { id: "list-tx" });
+      toast.loading("Publishing in progress...", { id: "list-tx" });
       await tx.wait();
-      toast.success("Proprietà pubblicata con successo!", { id: "list-tx" });
+      toast.success("Property published successfully!", { id: "list-tx" });
       return true;
     } catch (error: any) {
-      console.error("Errore nella pubblicazione:", error);
-      toast.error(error.reason || "Errore durante la pubblicazione", {
+      console.error("Error publishing property:", error);
+      toast.error(error.reason || "Error during publishing", {
         id: "list-tx",
       });
       return false;
@@ -312,23 +335,23 @@ export const useWeb3 = () => {
     }
   };
 
-  // Disattiva pool
+  // Deactivate pool
   const deactivatePool = async (propertyId: bigint) => {
     if (!contract) {
-      toast.error("Contratto non inizializzato");
+      toast.error("Contract not initialized");
       return false;
     }
 
     setLoading(true);
     try {
       const tx = await contract.deactivatePool(propertyId);
-      toast.loading("Disattivazione in corso...", { id: "deactivate-tx" });
+      toast.loading("Deactivating pool...", { id: "deactivate-tx" });
       await tx.wait();
-      toast.success("Pool disattivata!", { id: "deactivate-tx" });
+      toast.success("Pool deactivated!", { id: "deactivate-tx" });
       return true;
     } catch (error: any) {
-      console.error("Errore nella disattivazione:", error);
-      toast.error(error.reason || "Errore durante la disattivazione", {
+      console.error("Error deactivating pool:", error);
+      toast.error(error.reason || "Error during deactivation", {
         id: "deactivate-tx",
       });
       return false;
@@ -337,23 +360,23 @@ export const useWeb3 = () => {
     }
   };
 
-  // Riattiva pool
+  // Reactivate pool
   const reactivatePool = async (propertyId: bigint) => {
     if (!contract) {
-      toast.error("Contratto non inizializzato");
+      toast.error("Contract not initialized");
       return false;
     }
 
     setLoading(true);
     try {
       const tx = await contract.reactivatePool(propertyId);
-      toast.loading("Riattivazione in corso...", { id: "reactivate-tx" });
+      toast.loading("Reactivating pool...", { id: "reactivate-tx" });
       await tx.wait();
-      toast.success("Pool riattivata!", { id: "reactivate-tx" });
+      toast.success("Pool reactivated!", { id: "reactivate-tx" });
       return true;
     } catch (error: any) {
-      console.error("Errore nella riattivazione:", error);
-      toast.error(error.reason || "Errore durante la riattivazione", {
+      console.error("Error reactivating pool:", error);
+      toast.error(error.reason || "Error during reactivation", {
         id: "reactivate-tx",
       });
       return false;
@@ -362,14 +385,14 @@ export const useWeb3 = () => {
     }
   };
 
-  // Effetti
+  // Effects
   useEffect(() => {
     if (walletState.account) {
       initContract();
     }
   }, [walletState.account, initContract]);
 
-  // Listener per cambio account
+  // Listener for account change
   useEffect(() => {
     if (!window.ethereum) return;
 
@@ -401,7 +424,7 @@ export const useWeb3 = () => {
 
   // Get a single property by ID
   const getProperty = async (propertyId: bigint): Promise<Property | null> => {
-    if (!contractReady || !contract) throw new Error("Contract non pronto");
+    if (!contractReady || !contract) throw new Error("Contract not ready");
 
     try {
       const prop = await contract.getProperty(propertyId);
@@ -421,7 +444,7 @@ export const useWeb3 = () => {
         estimatedAnnualYield: prop.estimatedAnnualYield || 0,
       };
     } catch (error: any) {
-      console.error("Errore nel recupero proprietà:", error);
+      console.error("Error fetching property:", error);
       return null;
     }
   };
@@ -430,7 +453,7 @@ export const useWeb3 = () => {
   const getPropertyDocuments = async (
     propertyId: bigint
   ): Promise<PropertyDocument[]> => {
-    if (!contractReady || !contract) throw new Error("Contract non pronto");
+    if (!contractReady || !contract) throw new Error("Contract not ready");
 
     try {
       const documents = await contract.getPropertyDocuments(propertyId);
@@ -444,8 +467,8 @@ export const useWeb3 = () => {
         uploadedBy: doc.uploadedBy,
       }));
     } catch (error: any) {
-      console.error("Errore nel recupero documenti:", error);
-      throw new Error(error.message || "Errore nel recupero dei documenti");
+      console.error("Error fetching documents:", error);
+      throw new Error(error.message || "Error fetching documents");
     }
   };
 
@@ -456,26 +479,25 @@ export const useWeb3 = () => {
     docType: string,
     ipfsHash: string
   ): Promise<boolean> => {
-    if (!contractReady || !contract) throw new Error("Contract non pronto");
-    if (!walletState.account) throw new Error("Wallet non connesso");
+    if (!contractReady || !contract) throw new Error("Contract not ready");
+    if (!walletState.account) throw new Error("Wallet not connected");
 
     try {
-      // Il contratto accetta: propertyId, name, docType, ipfsHash
       const tx = await contract.uploadDocument(
         propertyId,
         name,
         docType,
         ipfsHash
       );
-      toast.loading("Caricamento documento in corso...");
+      toast.loading("Uploading document...");
       await tx.wait();
       toast.dismiss();
-      toast.success("Documento caricato con successo!");
+      toast.success("Document uploaded successfully!");
       return true;
     } catch (error: any) {
       toast.dismiss();
-      console.error("Errore nel caricamento documento:", error);
-      toast.error(error.message || "Errore nel caricamento del documento");
+      console.error("Error uploading document:", error);
+      toast.error(error.message || "Error uploading document");
       return false;
     }
   };
@@ -485,14 +507,14 @@ export const useWeb3 = () => {
     propertyId: bigint,
     investor: string
   ): Promise<number> => {
-    if (!contractReady || !contract) throw new Error("Contract non pronto");
+    if (!contractReady || !contract) throw new Error("Contract not ready");
 
     try {
       const tokens = await contract.getInvestorTokens(propertyId, investor);
       return Number(tokens);
     } catch (error: any) {
-      console.error("Errore nel recupero token investitore:", error);
-      throw new Error(error.message || "Errore nel recupero dei token");
+      console.error("Error fetching investor tokens:", error);
+      throw new Error(error.message || "Error fetching tokens");
     }
   };
 
@@ -516,6 +538,7 @@ export const useWeb3 = () => {
     uploadDocument,
     getInvestorTokens,
     TOKEN_PRICE_USD,
-    USD_TO_ETH_RATE,
+    ethPrice,
+    priceLoading,
   };
 };

@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  # Polygon Dashboard & RPC Monitor
+  polygon-dashboard:
+    image: nginx:alpine
+    container_name: polygon-dashboard
+    ports:
+      - "8080:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./monitor-config.conf:/etc/nginx/nginx.conf:ro
+      - ./logs:/var/log/nginx
+    networks:
+      - polygon-network
+
+  # Log viewer per le transazioni
+  logviewer:
+    image: amir20/dozzle:latest
+    container_name: polygon-logviewer
+    ports:
+      - "9999:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - polygon-network
+
+networks:
+  polygon-network:
+    driver: bridge
+# NOTA: Polygon Amoy è una blockchain pubblica, non possiamo farla girare localmente.
+# Questo setup fornisce:
+# - Monitoring delle chiamate RPC
+# - Log viewer per le transazioni Docker
+#
+# Per vedere le transazioni Polygon:
+# - Amoy Explorer: https://amoy.polygonscan.com/
+# - Mumbai Explorer: https://mumbai.polygonscan.com/

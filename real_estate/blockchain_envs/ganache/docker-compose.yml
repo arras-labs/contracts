@@ -1,0 +1,49 @@
+services:
+  ganache:
+    image: trufflesuite/ganache:latest
+    container_name: ganache-real-estate
+    ports:
+      - "7545:8545"
+    command: >
+      --wallet.totalAccounts=10
+      --wallet.defaultBalance=100
+      --miner.blockGasLimit=12000000
+      --chain.chainId=1337
+      --server.host=0.0.0.0
+      --wallet.mnemonic="million ice trip field economy number ritual metal still quit monkey crane"
+    networks:
+      - blockchain-network
+    volumes:
+      - ganache-data:/ganache-data
+
+  # NOTA: Per lo sviluppo, esegui il frontend manualmente con:
+  #   cd ../../frontend && npm run dev
+  #
+  # Decommentare solo per produzione:
+  # frontend:
+  #   build:
+  #     context: ../../frontend
+  #     dockerfile: Dockerfile
+  #   container_name: real-estate-frontend
+  #   ports:
+  #     - "5173:5173"
+  #   volumes:
+  #     - ../../frontend:/app
+  #     - /app/node_modules
+  #   environment:
+  #     - VITE_GANACHE_URL=http://ganache:8545
+  #     - VITE_CONTRACT_ADDRESS=0x8A5245157f1909904ceD3ff440d3d2D2352b9253
+  #     - VITE_CHAIN_ID=1337
+  #     - VITE_NETWORK_NAME=Ganache Local
+  #   depends_on:
+  #     - ganache
+  #   networks:
+  #     - blockchain-network
+  #   command: npm run dev -- --host
+
+networks:
+  blockchain-network:
+    driver: bridge
+
+volumes:
+  ganache-data:

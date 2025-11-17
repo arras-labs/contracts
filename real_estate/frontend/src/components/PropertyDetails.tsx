@@ -257,6 +257,8 @@ export const PropertyDetails = ({
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
+                📁 Documenti ({documents.length})
+              </button>
               <button
                 onClick={() => setActiveTab("location")}
                 className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
@@ -266,8 +268,6 @@ export const PropertyDetails = ({
                 }`}
               >
                 📍 Location & Amenities
-              </button>
-                📁 Documenti ({documents.length})
               </button>
             </nav>
           </div>
@@ -385,13 +385,13 @@ export const PropertyDetails = ({
                 isOwner={isOwner}
                 onUploadDocument={handleUploadDocument}
                 loading={loading}
+              />
+            )}
 
             {activeTab === "location" && (
               <PropertyMap
                 address={property.location}
                 propertyName={property.name}
-              />
-            )}
               />
             )}
           </div>

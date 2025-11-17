@@ -795,7 +795,14 @@ contract RealEstate is ERC721, AccessControl, ReentrancyGuard, Pausable {
     /**
      * @notice Get detailed pool information for a property
      * @param _propertyId ID of the property
-     * @return Pool statistics
+     * @return totalTokens Total tokens available for the property
+     * @return tokensSold Number of tokens already sold
+     * @return tokensAvailable Number of tokens still available
+     * @return totalValueUSD Total property value in USD
+     * @return currentValueUSD Current value raised in USD
+     * @return percentageComplete Percentage of pool completion
+     * @return isActive Whether the pool is active
+     * @return investors Array of investor addresses
      */
     function getPoolInfo(uint256 _propertyId)
         public
@@ -896,12 +903,13 @@ contract RealEstate is ERC721, AccessControl, ReentrancyGuard, Pausable {
     /**
      * @notice Get all properties an investor has invested in
      * @param _investor Address of the investor
-     * @return Array of properties and token amounts
+     * @return investedProperties Array of properties the investor has invested in
+     * @return tokenAmounts Array of token amounts owned for each property
      */
     function getMyInvestments(address _investor)
         public
         view
-        returns (Property[] memory, uint256[] memory)
+        returns (Property[] memory investedProperties, uint256[] memory tokenAmounts)
     {
         uint256 totalProperties = _propertyIds;
         uint256 investmentCount = 0;

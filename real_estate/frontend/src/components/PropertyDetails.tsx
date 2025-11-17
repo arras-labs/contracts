@@ -4,6 +4,7 @@ import type { Property, PropertyDocument, PoolInfo } from "../types";
 import { YieldSection } from "./YieldSection";
 import { DocumentsSection } from "./DocumentsSection";
 import { TokenPurchaseModal } from "./TokenPurchaseModal";
+import { PropertyMap } from "./PropertyMap";
 
 interface PropertyDetailsProps {
   walletState: { account: string | null; isConnected: boolean };
@@ -43,7 +44,7 @@ export const PropertyDetails = ({
   const [documents, setDocuments] = useState<PropertyDocument[]>([]);
   const [userTokens, setUserTokens] = useState(0);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "yield" | "documents"
+    "overview" | "yield" | "documents" | "location"
   >("overview");
   const [showTokenModal, setShowTokenModal] = useState(false);
 
@@ -256,6 +257,16 @@ export const PropertyDetails = ({
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
+              <button
+                onClick={() => setActiveTab("location")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                  activeTab === "location"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                📍 Location & Amenities
+              </button>
                 📁 Documenti ({documents.length})
               </button>
             </nav>
@@ -374,6 +385,13 @@ export const PropertyDetails = ({
                 isOwner={isOwner}
                 onUploadDocument={handleUploadDocument}
                 loading={loading}
+
+            {activeTab === "location" && (
+              <PropertyMap
+                address={property.location}
+                propertyName={property.name}
+              />
+            )}
               />
             )}
           </div>

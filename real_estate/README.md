@@ -1,386 +1,424 @@
-# Real Estate DApp - Polygon Blockchain
+# 🏠 Arras Labs - Fractional Property Tokenization Platform
 
-Una DApp (Decentralized Application) completa per la gestione di proprietà immobiliari tokenizzate come NFT su blockchain Polygon. Il progetto include smart contract Solidity, frontend React con TypeScript e Tailwind CSS 4, e supporto Docker.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Solidity](https://img.shields.io/badge/Solidity-^0.8.20-363636?logo=solidity)](https://docs.soliditylang.org/)
+[![Hardhat](https://img.shields.io/badge/Built%20with-Hardhat-FFDB1C.svg)](https://hardhat.org/)
+[![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.0.1-4E5EE4?logo=openzeppelin)](https://openzeppelin.com/contracts/)
 
-## 🎯 Caratteristiche
-
-- **Smart Contract Solidity**: Gestione completa di proprietà immobiliari come NFT ERC-721
-- **Frontend React + TypeScript**: Interfaccia utente moderna e reattiva
-- **Tailwind CSS 4**: Styling moderno e responsive
-- **Web3 Integration**: Connessione con MetaMask e altri wallet
-- **Polygon Network**: Deploy su testnet Polygon Amoy
-- **Docker Support**: Containerizzazione con Ganache per sviluppo locale
-
-## 📋 Prerequisiti
-
-- Node.js >= 18.x
-- npm o yarn
-- Docker e Docker Compose (opzionale)
-- MetaMask o altro wallet Web3
-
-## 🚀 Setup Iniziale
-
-### 1. Clona e installa dipendenze
-
-```bash
-# Installa dipendenze backend (Hardhat)
-cd real_estate
-npm install
-
-# Installa dipendenze frontend
-cd frontend
-npm install
-cd ..
-```
-
-### 2. Configurazione Environment Variables
-
-```bash
-# Copia il file .env di esempio
-cp .env.example .env
-
-# Modifica .env con le tue configurazioni
-# - PRIVATE_KEY: Chiave privata del wallet per il deploy
-# - POLYGON_AMOY_URL: URL RPC Polygon testnet
-# - POLYGONSCAN_API_KEY: API key per verifica contratti
-```
-
-### 3. Avvia Ganache Locale (Opzione A - Con Docker)
-
-```bash
-# Avvia il container Ganache
-docker-compose up -d ganache
-
-# Verifica che Ganache sia attivo
-docker-compose ps
-```
-
-### 3. Avvia Ganache Locale (Opzione B - Senza Docker)
-
-```bash
-# Installa Ganache globalmente
-npm install -g ganache
-
-# Avvia Ganache
-ganache --wallet.totalAccounts=10 --wallet.defaultBalance=100 --chain.chainId=1337
-```
-
-## 📝 Compilazione e Deploy Smart Contract
-
-### Compila i contratti
-
-```bash
-npm run compile
-```
-
-### Deploy su Ganache locale
-
-```bash
-# Assicurati che Ganache sia in esecuzione
-npm run deploy:ganache
-```
-
-**IMPORTANTE**: Salva l'indirizzo del contratto deployato! Lo troverai nell'output:
-
-```
-✅ Contratto RealEstate deployato a: 0x5FbDB2315678afecb367f032d93F642f64180aa3
-```
-
-### Deploy su Polygon Testnet
-
-```bash
-# Assicurati di avere MATIC test nel wallet
-npm run deploy:polygon
-```
-
-Per ottenere MATIC test: https://faucet.polygon.technology/
-
-## 🎨 Setup Frontend
-
-### 1. Configura le variabili d'ambiente
-
-```bash
-cd frontend
-cp .env.example .env
-```
-
-Modifica `frontend/.env`:
-
-```env
-# Indirizzo del contratto deployato (dall'output del deploy)
-VITE_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
-
-# Per Ganache locale
-VITE_CHAIN_ID=1337
-VITE_NETWORK_NAME=Ganache Local
-
-# Per Polygon Testnet (decommentare se usi testnet)
-# VITE_CHAIN_ID=80002
-# VITE_NETWORK_NAME=Polygon Amoy Testnet
-```
-
-### 2. Avvia il frontend
-
-```bash
-npm run dev
-```
-
-Il frontend sarà disponibile su: http://localhost:5173
-
-## 🔧 Configurazione MetaMask
-
-### Per Ganache Locale
-
-1. Apri MetaMask
-2. Aggiungi una rete personalizzata:
-
-   - **Nome Rete**: Ganache Local
-   - **RPC URL**: http://127.0.0.1:8545
-   - **Chain ID**: 1337
-   - **Simbolo**: ETH
-
-3. Importa un account da Ganache:
-   - Copia una chiave privata da Ganache
-   - MetaMask → Importa Account → Incolla chiave privata
-
-### Per Polygon Amoy Testnet
-
-1. Apri MetaMask
-2. Aggiungi Polygon Amoy:
-
-   - **Nome Rete**: Polygon Amoy Testnet
-   - **RPC URL**: https://rpc-amoy.polygon.technology
-   - **Chain ID**: 80002
-   - **Simbolo**: MATIC
-   - **Block Explorer**: https://amoy.polygonscan.com
-
-3. Ottieni MATIC test dal faucet: https://faucet.polygon.technology/
-
-## 🐳 Uso con Docker
-
-### Avvia l'intero stack
-
-```bash
-# Avvia Ganache e Frontend
-docker-compose up -d
-
-# Verifica lo stato
-docker-compose ps
-
-# Visualizza i log
-docker-compose logs -f
-```
-
-### Comandi utili Docker
-
-```bash
-# Ferma tutti i servizi
-docker-compose down
-
-# Rebuild dei container
-docker-compose up -d --build
-
-# Rimuovi volumi (reset completo)
-docker-compose down -v
-```
-
-## 📱 Utilizzo della DApp
-
-### 1. Connetti il Wallet
-
-- Clicca su "Connetti Wallet"
-- Approva la connessione in MetaMask
-- Assicurati di essere sulla rete corretta
-
-### 2. Naviga nel Marketplace
-
-- Visualizza tutte le proprietà disponibili
-- Vedi dettagli: prezzo, area, posizione, descrizione
-- Clicca "Acquista Ora" per comprare una proprietà
-
-### 3. Gestisci le Tue Proprietà
-
-- Vai alla tab "Le Mie Proprietà"
-- Metti in vendita le tue proprietà
-- Cambia il prezzo
-- Rimuovi dalla vendita
-
-### 4. Aggiungi Nuove Proprietà
-
-- Clicca "Aggiungi Proprietà"
-- Compila il form con:
-  - Nome proprietà
-  - Descrizione
-  - Posizione
-  - Prezzo in ETH
-  - Area in m²
-  - URL immagine
-- Conferma la transazione in MetaMask
-
-## 📂 Struttura del Progetto
-
-```
-real_estate/
-├── contracts/              # Smart contracts Solidity
-│   └── RealEstate.sol     # Contratto principale
-├── scripts/               # Script di deploy
-│   └── deploy.ts          # Deploy script
-├── frontend/              # Frontend React
-│   ├── src/
-│   │   ├── components/    # Componenti React
-│   │   ├── hooks/         # Custom hooks (useWeb3)
-│   │   ├── types/         # TypeScript types
-│   │   ├── utils/         # Utilities e constants
-│   │   ├── App.tsx        # Componente principale
-│   │   └── main.tsx       # Entry point
-│   ├── Dockerfile         # Docker config frontend
-│   └── package.json
-├── docker-compose.yml     # Docker orchestration
-├── hardhat.config.ts      # Configurazione Hardhat
-├── package.json           # Dipendenze backend
-└── README.md             # Questa documentazione
-```
-
-## 🔍 Test Smart Contract
-
-```bash
-# Esegui i test (se implementati)
-npm test
-
-# Test con coverage
-npx hardhat coverage
-```
-
-## 🛠️ Comandi Utili
-
-### Hardhat
-
-```bash
-# Compila contratti
-npx hardhat compile
-
-# Pulisci artifacts
-npx hardhat clean
-
-# Console Hardhat
-npx hardhat console --network ganache
-
-# Verifica contratto su PolygonScan
-npx hardhat verify --network polygonAmoy DEPLOYED_CONTRACT_ADDRESS
-```
-
-### Frontend
-
-```bash
-cd frontend
-
-# Avvia dev server
-npm run dev
-
-# Build per produzione
-npm run build
-
-# Preview build
-npm run preview
-
-# Lint
-npm run lint
-```
-
-## 🎓 Funzionalità Smart Contract
-
-### Funzioni Principali
-
-- `listProperty()`: Lista una nuova proprietà come NFT
-- `buyProperty()`: Acquista una proprietà pagando in ETH/MATIC
-- `setForSale()`: Metti in vendita una proprietà posseduta
-- `removeFromSale()`: Rimuovi dalla vendita
-- `getPropertiesForSale()`: Ottieni tutte le proprietà in vendita
-- `getMyProperties()`: Ottieni le proprietà di un indirizzo
-- `getProperty()`: Dettagli di una proprietà specifica
-
-### Eventi
-
-- `PropertyListed`: Emesso quando una proprietà viene listata
-- `PropertySold`: Emesso quando una proprietà viene venduta
-- `PropertyPriceChanged`: Emesso quando il prezzo cambia
-- `PropertyDelisted`: Emesso quando viene rimossa dalla vendita
-
-## 🔒 Sicurezza
-
-⚠️ **ATTENZIONE**: Questo è un progetto educativo/dimostrativo
-
-- Non utilizzare chiavi private reali in `.env`
-- Non committare mai file `.env` su Git
-- Usa wallet di test per sviluppo
-- Audita il codice prima di deploy in produzione
-
-## 🐛 Troubleshooting
-
-### MetaMask non si connette
-
-- Verifica di essere sulla rete corretta (Chain ID)
-- Resetta l'account MetaMask: Impostazioni → Avanzate → Resetta Account
-
-### Errore "Insufficient funds"
-
-- Assicurati di avere abbastanza ETH/MATIC nel wallet
-- Per Ganache: usa un account con balance precaricato
-- Per testnet: ottieni token dal faucet
-
-### Contratto non trovato
-
-- Verifica che `VITE_CONTRACT_ADDRESS` sia impostato correttamente
-- Assicurati che il contratto sia deployato sulla rete attiva
-- Controlla il Chain ID in `.env`
-
-### Docker issues
-
-```bash
-# Riavvia tutti i container
-docker-compose restart
-
-# Rimuovi e ricrea
-docker-compose down -v
-docker-compose up -d --build
-```
-
-## 📚 Tecnologie Utilizzate
-
-- **Solidity 0.8.20**: Smart contract
-- **Hardhat**: Framework sviluppo Ethereum
-- **OpenZeppelin**: Librerie sicure per contratti
-- **React 18**: Framework frontend
-- **TypeScript**: Type safety
-- **Tailwind CSS 4**: Styling
-- **Ethers.js v6**: Libreria Web3
-- **Vite**: Build tool
-- **Docker**: Containerizzazione
-- **Ganache**: Blockchain locale
-
-## 📄 Licenza
-
-MIT License - Progetto educativo
-
-## 🤝 Contributi
-
-Questo è un progetto dimostrativo. Per miglioramenti:
-
-1. Fork del progetto
-2. Crea un branch per la feature
-3. Commit delle modifiche
-4. Push del branch
-5. Apri una Pull Request
-
-## 📞 Supporto
-
-Per problemi o domande:
-
-- Controlla la sezione Troubleshooting
-- Verifica i log: `docker-compose logs` o console browser
-- Consulta la documentazione Hardhat: https://hardhat.org/
-- Documentazione Polygon: https://docs.polygon.technology/
+> **Democratizing real estate investment by breaking down barriers to entry and creating an inclusive, liquid ecosystem where anyone can invest in property.**
 
 ---
 
-**Buon coding! 🚀**
+## 🌟 Our Mission
+
+In a world where property investment is often a privilege of the wealthy, we are on a mission to tear down the barriers. Our goal is to revolutionize the real estate market, transforming it from an exclusive club into an open, inclusive, and liquid ecosystem for everyone.
+
+We are building a platform to tokenize property, allowing anyone to invest in bricks and mortar with the same ease as buying a share. Imagine owning a fraction of a home, earning returns from rent, and having a say in a market that has been out of reach for too long.
+
+**This is more than just a project; it's a movement towards radical change. We believe in a future where financial empowerment is not determined by your background, but by your ambition.**
+
+---
+
+## ✨ Features
+
+### 🔐 Security First
+- **ReentrancyGuard**: Protection against reentrancy attacks
+- **Pausable**: Emergency stop mechanism for critical situations
+- **AccessControl**: Role-based permissions (Admin, Property Manager, Compliance Officer)
+- **Pull Payment Pattern**: Secure fund management avoiding push vulnerabilities
+- **Comprehensive Auditing**: Full event logging for transparency
+
+### 💼 Fractional Ownership
+- **$50 USD per Token**: Accessible entry point for all investors
+- **Pool-Based System**: Collective investment in high-value properties
+- **NFT Property Ownership**: Legal ownership represented as ERC721 tokens
+- **Transparent Tracking**: Real-time visibility of investments and ownership
+
+### 💰 Automated Dividends
+- **Rent Distribution**: Automated dividend payments to token holders
+- **Claim Mechanism**: Investors claim proportional rental income
+- **Batch Claiming**: Claim all unclaimed dividends in one transaction
+- **Transparent History**: Complete record of all distributions
+
+### 🪙 Stablecoin Support
+- **USDC Integration**: Stable pricing free from crypto volatility
+- **Dual Payment System**: Accept ETH or USDC for purchases
+- **Multi-Network**: Support for Ethereum, Polygon, and testnets
+
+### 📋 Compliance & KYC
+- **KYC Verification**: Regulatory compliance built-in
+- **Blacklist System**: Enhanced security and compliance
+- **Document Verification**: Compliance officer approval workflow
+- **Audit Trail**: Complete transaction history for regulators
+
+### 🎯 Platform Features
+- **Platform Fees**: Sustainable 2.5% fee (configurable)
+- **Property Management**: Tools for property owners
+- **Document Storage**: IPFS integration for legal documents
+- **Yield Tracking**: Monitor estimated and actual returns
+
+---
+
+## 🏗️ Architecture
+
+### Smart Contract Structure
+
+```
+RealEstate.sol (Main Contract)
+├── ERC721 (Property Ownership NFTs)
+├── AccessControl (Role-based permissions)
+├── ReentrancyGuard (Attack prevention)
+└── Pausable (Emergency controls)
+
+MockUSDC.sol (Testing)
+└── ERC20 (Test stablecoin)
+```
+
+### Key Components
+
+1. **Property Tokenization**: Each property is an ERC721 NFT with associated fractional tokens
+2. **Investment Pools**: Investors buy $50 tokens representing fractional ownership
+3. **Dividend System**: Property owners distribute rent proportionally to token holders
+4. **Compliance Layer**: KYC/AML integration for regulatory compliance
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js >= 18.x
+- npm or yarn
+- MetaMask or compatible Web3 wallet
+- (Optional) Docker for local blockchain
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/arras-labs/contracts.git
+cd contracts/real_estate
+
+# Install dependencies
+npm install
+
+# Install frontend dependencies
+cd frontend && npm install && cd ..
+```
+
+### Configuration
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your values
+# Required: PRIVATE_KEY, RPC URLs
+```
+
+### Development
+
+```bash
+# Compile contracts
+npm run compile
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests with gas reporting
+npm run test:gas
+
+# Start local blockchain
+npm run node
+
+# Deploy to local network
+npm run deploy:ganache
+
+# Deploy to Polygon testnet
+npm run deploy:polygon
+```
+
+### Code Quality
+
+```bash
+# Lint Solidity and TypeScript
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
+
+# Format code
+npm run format
+
+# Check formatting
+npm run format:check
+```
+
+---
+
+## 📝 Usage Examples
+
+### For Property Owners
+
+```solidity
+// List a new property
+uint256 propertyId = realEstate.listProperty(
+    "Luxury Apartment",
+    "Modern 2BR in downtown",
+    "New York, NY",
+    250000, // $250,000 USD
+    120, // 120 sqm
+    "ipfs://...",
+    550 // 5.5% estimated yield
+);
+
+// Distribute rental income
+realEstate.distributeDividends{value: 1 ether}(
+    propertyId,
+    "Q1 2024 Rent Distribution"
+);
+
+// Upload legal documents
+realEstate.uploadDocument(
+    propertyId,
+    "Purchase Agreement",
+    "Legal Contract",
+    "QmXYZ..."
+);
+```
+
+### For Investors
+
+```solidity
+// Buy fractional tokens (ETH)
+realEstate.buyTokens{value: 0.1 ether}(
+    propertyId,
+    10, // Buy 10 tokens
+    ethers.parseEther("0.01") // Price per token in ETH
+);
+
+// Buy fractional tokens (USDC)
+usdc.approve(address(realEstate), 500 * 1e6); // Approve $500
+realEstate.buyTokensWithStablecoin(propertyId, 10);
+
+// Claim dividends
+realEstate.claimAllDividends(propertyId);
+
+// Check unclaimed dividends
+uint256 unclaimed = realEstate.getUnclaimedDividends(propertyId, investor);
+```
+
+### For Admins
+
+```solidity
+// Verify KYC
+realEstate.setKYCVerification(userAddress, true);
+
+// Verify documents
+realEstate.verifyDocument(documentId);
+
+// Update platform fee
+realEstate.setPlatformFee(200); // 2.0%
+
+// Emergency pause
+realEstate.pause();
+```
+
+---
+
+## 🔧 Technology Stack
+
+### Smart Contracts
+- **Solidity 0.8.20**: Latest secure version
+- **OpenZeppelin 5.0.1**: Battle-tested contract libraries
+- **Hardhat**: Development environment
+
+### Frontend
+- **React 18**: Modern UI framework
+- **TypeScript**: Type-safe development
+- **Tailwind CSS 4**: Modern styling
+- **Ethers.js v6**: Blockchain interaction
+- **Vite**: Fast build tool
+
+### Blockchain
+- **Polygon**: Primary deployment target
+- **Ethereum**: Mainnet support
+- **Ganache**: Local development
+
+---
+
+## 🧪 Testing
+
+Comprehensive test suite covering:
+
+- ✅ Property listing and tokenization
+- ✅ Fractional token purchases (ETH & USDC)
+- ✅ Dividend distribution and claiming
+- ✅ Access control and permissions
+- ✅ KYC and compliance features
+- ✅ Emergency pause mechanisms
+- ✅ Document management
+- ✅ Pool completion scenarios
+
+```bash
+# Run full test suite
+npm test
+
+# Run with coverage report
+npm run test:coverage
+
+# Run with gas profiling
+npm run test:gas
+```
+
+---
+
+## 📊 Contract Addresses
+
+### Mainnets
+
+| Network  | Contract Address | USDC Address |
+|----------|------------------|--------------|
+| Polygon  | TBD              | `0x2791Bca...` |
+| Ethereum | TBD              | `0xA0b8699...` |
+
+### Testnets
+
+| Network       | Contract Address | USDC Address |
+|---------------|------------------|--------------|
+| Polygon Amoy  | TBD              | `0x41E94Eb...` |
+| Mumbai        | TBD              | `0xe6b8a5C...` |
+
+---
+
+## 🔒 Security
+
+### Audit Status
+- [ ] Internal audit completed
+- [ ] External audit pending
+- [ ] Bug bounty program (Coming soon)
+
+### Security Features
+- Reentrancy protection on all payable functions
+- Pull payment pattern for fund transfers
+- Role-based access control
+- Emergency pause capability
+- Comprehensive input validation
+- Event logging for transparency
+
+### Reporting Vulnerabilities
+
+If you discover a security vulnerability, please email us at:
+**security@arras-labs.com**
+
+Please do NOT create public GitHub issues for security vulnerabilities.
+
+---
+
+## 🗺️ Roadmap
+
+### Phase 1: Foundation ✅ (Current)
+- [x] Core tokenization contract
+- [x] Fractional ownership system
+- [x] Dividend distribution
+- [x] KYC/compliance integration
+- [x] Stablecoin support
+- [x] Security audit preparation
+
+### Phase 2: Governance 🚧 (Q2 2024)
+- [ ] Token holder voting system
+- [ ] Property management proposals
+- [ ] Decentralized decision-making
+- [ ] Governance token launch
+
+### Phase 3: Liquidity 📋 (Q3 2024)
+- [ ] Secondary market integration
+- [ ] DEX liquidity pools
+- [ ] Fractional token trading
+- [ ] Price discovery mechanisms
+
+### Phase 4: Expansion 🎯 (Q4 2024)
+- [ ] Multi-chain deployment
+- [ ] Oracle integration for valuations
+- [ ] Insurance mechanisms
+- [ ] Mobile app launch
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Commit Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` New features
+- `fix:` Bug fixes
+- `docs:` Documentation changes
+- `test:` Test additions or changes
+- `refactor:` Code refactoring
+- `chore:` Maintenance tasks
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🌐 Links
+
+- **Website**: [https://arras-labs.com](https://arras-labs.com)
+- **Documentation**: [https://docs.arras-labs.com](https://docs.arras-labs.com)
+- **Twitter**: [@ArrasLabs](https://twitter.com/ArrasLabs)
+- **Discord**: [Join our community](https://discord.gg/arras-labs)
+- **Email**: hello@arras-labs.com
+
+---
+
+## 👥 Team
+
+**Arras Labs** is built by a passionate team dedicated to democratizing real estate investment.
+
+---
+
+## 🙏 Acknowledgments
+
+- OpenZeppelin for secure smart contract libraries
+- Hardhat team for excellent development tools
+- Polygon for scalable blockchain infrastructure
+- Our community for continuous support and feedback
+
+---
+
+## 💡 Support
+
+Need help? Have questions?
+
+- 📖 Read the [Documentation](https://docs.arras-labs.com)
+- 💬 Join our [Discord](https://discord.gg/arras-labs)
+- 🐛 Report bugs via [GitHub Issues](https://github.com/arras-labs/contracts/issues)
+- 📧 Email us at support@arras-labs.com
+
+---
+
+<div align="center">
+
+**Built with ❤️ by Arras Labs**
+
+*Making property investment accessible to everyone*
+
+</div>

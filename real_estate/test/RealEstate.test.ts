@@ -3,14 +3,19 @@ import { ethers } from "hardhat";
 import { RealEstate } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe("RealEstate", function () {
+describe("RealEstate - Fractional Property Tokenization", function () {
   let realEstate: RealEstate;
   let owner: SignerWithAddress;
-  let buyer: SignerWithAddress;
-  let addr2: SignerWithAddress;
+  let investor1: SignerWithAddress;
+  let investor2: SignerWithAddress;
+  let propertyManager: SignerWithAddress;
+
+  const TOKEN_PRICE_USD = 50n;
+  const PROPERTY_VALUE = 10000; // $10,000 = 200 tokens
+  const ESTIMATED_YIELD = 500; // 5%
 
   beforeEach(async function () {
-    [owner, buyer, addr2] = await ethers.getSigners();
+    [owner, investor1, investor2, propertyManager] = await ethers.getSigners();
 
     const RealEstateFactory = await ethers.getContractFactory("RealEstate");
     realEstate = (await RealEstateFactory.deploy()) as unknown as RealEstate;
@@ -26,260 +31,403 @@ describe("RealEstate", function () {
       expect(await realEstate.name()).to.equal("RealEstateNFT");
       expect(await realEstate.symbol()).to.equal("RENFT");
     });
+
+    it("Should have correct token price", async function () {
+      expect(await realEstate.TOKEN_PRICE_USD()).to.equal(TOKEN_PRICE_USD);
+    });
   });
 
-  describe("Listing Properties", function () {
-    it("Should list a new property", async function () {
+  describe("Listing Properties with Token Pool", function () {
+    it("Should list a new property with token pool", async function () {
       const tx = await realEstate.listProperty(
-        "Villa Test",
-        "Descrizione test",
-        "Milano",
-        ethers.parseEther("1.0"),
-        100,
-        "https://example.com/image.jpg"
+        "Luxury Apartment",
+        "Modern apartment in city center",
+        "New York",
+        PROPERTY_VALUE,
+        100, // 100 sqm
+        "https://example.com/image.jpg",
+        ESTIMATED_YIELD
       );
 
       await expect(tx)
         .to.emit(realEstate, "PropertyListed")
-        .withArgs(1, "Villa Test", ethers.parseEther("1.0"), owner.address);
+        .withArgs(1, "Luxury Apartment", PROPERTY_VALUE, 200, owner.address);
 
       const property = await realEstate.getProperty(1);
-      expect(property.name).to.equal("Villa Test");
-      expect(property.price).to.equal(ethers.parseEther("1.0"));
-      expect(property.owner).to.equal(owner.address);
-      expect(property.isForSale).to.be.true;
+      expect(property.name).to.equal("Luxury Apartment");
+      expect(property.totalValueUSD).to.equal(PROPERTY_VALUE);
+      expect(property.totalTokens).to.equal(200); // 10000/50
+      expect(property.tokensSold).to.equal(0);
+      expect(property.isActive).to.be.true;
     });
 
-    it("Should fail to list property with zero price", async function () {
+    it("Should fail to list property with zero value", async function () {
       await expect(
         realEstate.listProperty(
-          "Villa Test",
-          "Descrizione",
-          "Milano",
+          "Test Property",
+          "Description",
+          "Location",
           0,
           100,
-          "https://example.com/image.jpg"
+          "url",
+          ESTIMATED_YIELD
         )
-      ).to.be.revertedWith("Il prezzo deve essere maggiore di zero");
+      ).to.be.revertedWith("Il valore deve essere maggiore di zero");
     });
 
     it("Should fail to list property with zero area", async function () {
       await expect(
         realEstate.listProperty(
-          "Villa Test",
-          "Descrizione",
-          "Milano",
-          ethers.parseEther("1.0"),
+          "Test Property",
+          "Description",
+          "Location",
+          PROPERTY_VALUE,
           0,
-          "https://example.com/image.jpg"
+          "url",
+          ESTIMATED_YIELD
         )
       ).to.be.revertedWith("L'area deve essere maggiore di zero");
     });
 
-    it("Should increment property IDs correctly", async function () {
+    it("Should mint NFT to property owner", async function () {
       await realEstate.listProperty(
         "Property 1",
-        "Desc 1",
-        "Location 1",
-        ethers.parseEther("1.0"),
+        "Desc",
+        "Location",
+        PROPERTY_VALUE,
         100,
-        "url1"
+        "url",
+        ESTIMATED_YIELD
       );
 
-      await realEstate.listProperty(
-        "Property 2",
-        "Desc 2",
-        "Location 2",
-        ethers.parseEther("2.0"),
-        200,
-        "url2"
-      );
-
-      expect(await realEstate.getTotalProperties()).to.equal(2);
+      expect(await realEstate.ownerOf(1)).to.equal(owner.address);
     });
   });
 
-  describe("Buying Properties", function () {
+  describe("Buying Tokens - Fractional Ownership", function () {
     beforeEach(async function () {
       await realEstate.listProperty(
-        "Villa for Sale",
-        "Beautiful villa",
-        "Roma",
-        ethers.parseEther("2.0"),
+        "Investment Property",
+        "High yield property",
+        "London",
+        PROPERTY_VALUE,
         150,
-        "https://example.com/villa.jpg"
+        "https://example.com/property.jpg",
+        ESTIMATED_YIELD
       );
     });
 
-    it("Should allow buying a property", async function () {
-      const propertyId = 1;
-      const price = ethers.parseEther("2.0");
+    it("Should allow investor to buy tokens", async function () {
+      const tokenAmount = 10;
+      const tokenPriceETH = ethers.parseEther("0.001"); // Mock price
+      const totalCost = tokenPriceETH * BigInt(tokenAmount);
 
       const tx = await realEstate
-        .connect(buyer)
-        .buyProperty(propertyId, { value: price });
+        .connect(investor1)
+        .buyTokens(1, tokenAmount, tokenPriceETH, { value: totalCost });
 
       await expect(tx)
-        .to.emit(realEstate, "PropertySold")
-        .withArgs(propertyId, owner.address, buyer.address, price);
+        .to.emit(realEstate, "TokensPurchased")
+        .withArgs(1, investor1.address, tokenAmount, totalCost);
 
-      const property = await realEstate.getProperty(propertyId);
-      expect(property.owner).to.equal(buyer.address);
-      expect(property.isForSale).to.be.false;
-      expect(await realEstate.ownerOf(propertyId)).to.equal(buyer.address);
+      const balance = await realEstate.getInvestorTokens(1, investor1.address);
+      expect(balance).to.equal(tokenAmount);
+    });
+
+    it("Should track multiple investors", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+
+      await realEstate
+        .connect(investor1)
+        .buyTokens(1, 50, tokenPriceETH, {
+          value: tokenPriceETH * 50n,
+        });
+
+      await realEstate
+        .connect(investor2)
+        .buyTokens(1, 30, tokenPriceETH, {
+          value: tokenPriceETH * 30n,
+        });
+
+      const poolInfo = await realEstate.getPoolInfo(1);
+      expect(poolInfo.tokensSold).to.equal(80);
+      expect(poolInfo.investors.length).to.equal(2);
+    });
+
+    it("Should fail to buy more tokens than available", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+
+      await expect(
+        realEstate
+          .connect(investor1)
+          .buyTokens(1, 250, tokenPriceETH, {
+            value: tokenPriceETH * 250n,
+          })
+      ).to.be.revertedWith("Token insufficienti nella pool");
     });
 
     it("Should fail to buy with insufficient funds", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+
       await expect(
         realEstate
-          .connect(buyer)
-          .buyProperty(1, { value: ethers.parseEther("1.0") })
+          .connect(investor1)
+          .buyTokens(1, 10, tokenPriceETH, {
+            value: tokenPriceETH * 5n, // Only paying for 5
+          })
       ).to.be.revertedWith("Fondi insufficienti");
     });
 
-    it("Should fail to buy own property", async function () {
-      await expect(
-        realEstate
-          .connect(owner)
-          .buyProperty(1, { value: ethers.parseEther("2.0") })
-      ).to.be.revertedWith("Non puoi acquistare la tua proprieta");
+    it("Should complete pool when all tokens sold", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+
+      const tx = await realEstate
+        .connect(investor1)
+        .buyTokens(1, 200, tokenPriceETH, {
+          value: tokenPriceETH * 200n,
+        });
+
+      await expect(tx)
+        .to.emit(realEstate, "PoolCompleted")
+        .withArgs(1, PROPERTY_VALUE);
+
+      const property = await realEstate.getProperty(1);
+      expect(property.isActive).to.be.false;
     });
 
-    it("Should fail to buy property not for sale", async function () {
-      await realEstate
-        .connect(buyer)
-        .buyProperty(1, { value: ethers.parseEther("2.0") });
+    it("Should transfer funds to property owner", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+      const tokenAmount = 10;
+      const totalCost = tokenPriceETH * BigInt(tokenAmount);
 
-      await expect(
-        realEstate
-          .connect(addr2)
-          .buyProperty(1, { value: ethers.parseEther("2.0") })
-      ).to.be.revertedWith("Proprieta non in vendita");
-    });
-
-    it("Should transfer funds to seller", async function () {
       const initialBalance = await ethers.provider.getBalance(owner.address);
-      const price = ethers.parseEther("2.0");
 
-      await realEstate.connect(buyer).buyProperty(1, { value: price });
+      await realEstate
+        .connect(investor1)
+        .buyTokens(1, tokenAmount, tokenPriceETH, { value: totalCost });
 
       const finalBalance = await ethers.provider.getBalance(owner.address);
-      expect(finalBalance).to.equal(initialBalance + price);
+      expect(finalBalance).to.equal(initialBalance + totalCost);
     });
   });
 
-  describe("Managing Properties", function () {
+  describe("Pool Management", function () {
     beforeEach(async function () {
       await realEstate.listProperty(
-        "My Property",
+        "Managed Property",
         "Description",
         "Location",
-        ethers.parseEther("1.0"),
+        PROPERTY_VALUE,
         100,
-        "url"
+        "url",
+        ESTIMATED_YIELD
       );
-
-      await realEstate
-        .connect(buyer)
-        .buyProperty(1, { value: ethers.parseEther("1.0") });
     });
 
-    it("Should allow owner to set property for sale", async function () {
-      const newPrice = ethers.parseEther("1.5");
-
-      await expect(realEstate.connect(buyer).setForSale(1, newPrice))
-        .to.emit(realEstate, "PropertyPriceChanged")
-        .withArgs(1, ethers.parseEther("1.0"), newPrice);
-
-      const property = await realEstate.getProperty(1);
-      expect(property.isForSale).to.be.true;
-      expect(property.price).to.equal(newPrice);
-    });
-
-    it("Should fail to set for sale if not owner", async function () {
-      await expect(
-        realEstate.connect(addr2).setForSale(1, ethers.parseEther("2.0"))
-      ).to.be.revertedWith("Non sei il proprietario");
-    });
-
-    it("Should allow owner to remove from sale", async function () {
-      await realEstate.connect(buyer).setForSale(1, ethers.parseEther("1.5"));
-
-      await expect(realEstate.connect(buyer).removeFromSale(1))
+    it("Should allow owner to deactivate pool", async function () {
+      await expect(realEstate.deactivatePool(1))
         .to.emit(realEstate, "PropertyDelisted")
         .withArgs(1);
 
       const property = await realEstate.getProperty(1);
-      expect(property.isForSale).to.be.false;
+      expect(property.isActive).to.be.false;
     });
 
-    it("Should fail to remove from sale if not owner", async function () {
-      await realEstate.connect(buyer).setForSale(1, ethers.parseEther("1.5"));
-
+    it("Should fail to deactivate if not owner", async function () {
       await expect(
-        realEstate.connect(addr2).removeFromSale(1)
+        realEstate.connect(investor1).deactivatePool(1)
       ).to.be.revertedWith("Non sei il proprietario");
+    });
+
+    it("Should allow owner to reactivate pool", async function () {
+      await realEstate.deactivatePool(1);
+      await realEstate.reactivatePool(1);
+
+      const property = await realEstate.getProperty(1);
+      expect(property.isActive).to.be.true;
+    });
+
+    it("Should fail to reactivate if all tokens sold", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+
+      await realEstate
+        .connect(investor1)
+        .buyTokens(1, 200, tokenPriceETH, {
+          value: tokenPriceETH * 200n,
+        });
+
+      await expect(realEstate.reactivatePool(1)).to.be.revertedWith(
+        "Tutti i token sono gia stati venduti"
+      );
     });
   });
 
-  describe("Querying Properties", function () {
+  describe("Querying Pool Information", function () {
     beforeEach(async function () {
-      // Lista 3 proprietà
       await realEstate.listProperty(
         "Property 1",
         "Desc 1",
         "Location 1",
-        ethers.parseEther("1.0"),
+        PROPERTY_VALUE,
         100,
-        "url1"
+        "url1",
+        ESTIMATED_YIELD
       );
 
       await realEstate.listProperty(
         "Property 2",
         "Desc 2",
         "Location 2",
-        ethers.parseEther("2.0"),
+        PROPERTY_VALUE * 2,
         200,
-        "url2"
+        "url2",
+        ESTIMATED_YIELD
       );
-
-      await realEstate
-        .connect(buyer)
-        .listProperty(
-          "Property 3",
-          "Desc 3",
-          "Location 3",
-          ethers.parseEther("3.0"),
-          300,
-          "url3"
-        );
     });
 
-    it("Should get all properties for sale", async function () {
-      const properties = await realEstate.getPropertiesForSale();
-      expect(properties.length).to.equal(3);
+    it("Should get pool info correctly", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+
+      await realEstate
+        .connect(investor1)
+        .buyTokens(1, 50, tokenPriceETH, {
+          value: tokenPriceETH * 50n,
+        });
+
+      const poolInfo = await realEstate.getPoolInfo(1);
+
+      expect(poolInfo.totalTokens).to.equal(200);
+      expect(poolInfo.tokensSold).to.equal(50);
+      expect(poolInfo.tokensAvailable).to.equal(150);
+      expect(poolInfo.percentageComplete).to.equal(25);
+      expect(poolInfo.isActive).to.be.true;
+    });
+
+    it("Should get all active properties", async function () {
+      const properties = await realEstate.getActiveProperties();
+      expect(properties.length).to.equal(2);
     });
 
     it("Should get my properties correctly", async function () {
+      await realEstate
+        .connect(investor1)
+        .listProperty(
+          "Investor Property",
+          "Desc",
+          "Location",
+          PROPERTY_VALUE,
+          100,
+          "url",
+          ESTIMATED_YIELD
+        );
+
       const ownerProperties = await realEstate.getMyProperties(owner.address);
       expect(ownerProperties.length).to.equal(2);
 
-      const buyerProperties = await realEstate.getMyProperties(buyer.address);
-      expect(buyerProperties.length).to.equal(1);
-      expect(buyerProperties[0].name).to.equal("Property 3");
+      const investorProperties = await realEstate.getMyProperties(
+        investor1.address
+      );
+      expect(investorProperties.length).to.equal(1);
     });
 
-    it("Should return correct total properties", async function () {
-      expect(await realEstate.getTotalProperties()).to.equal(3);
-    });
+    it("Should get my investments correctly", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
 
-    it("Should not include sold properties in for sale list", async function () {
       await realEstate
-        .connect(buyer)
-        .buyProperty(1, { value: ethers.parseEther("1.0") });
+        .connect(investor1)
+        .buyTokens(1, 50, tokenPriceETH, {
+          value: tokenPriceETH * 50n,
+        });
 
-      const properties = await realEstate.getPropertiesForSale();
-      expect(properties.length).to.equal(2);
+      await realEstate
+        .connect(investor1)
+        .buyTokens(2, 100, tokenPriceETH, {
+          value: tokenPriceETH * 100n,
+        });
+
+      const [investments, tokenAmounts] = await realEstate.getMyInvestments(
+        investor1.address
+      );
+
+      expect(investments.length).to.equal(2);
+      expect(tokenAmounts[0]).to.equal(50);
+      expect(tokenAmounts[1]).to.equal(100);
+    });
+  });
+
+  describe("Document Management", function () {
+    beforeEach(async function () {
+      await realEstate.listProperty(
+        "Documented Property",
+        "Description",
+        "Location",
+        PROPERTY_VALUE,
+        100,
+        "url",
+        ESTIMATED_YIELD
+      );
+    });
+
+    it("Should allow owner to upload document", async function () {
+      const tx = await realEstate.uploadDocument(
+        1,
+        "Contract",
+        "Legal Document",
+        "QmXYZ123456789"
+      );
+
+      await expect(tx)
+        .to.emit(realEstate, "DocumentUploaded")
+        .withArgs(1, 1, "Contract", "Legal Document", owner.address);
+    });
+
+    it("Should fail to upload if not owner", async function () {
+      await expect(
+        realEstate
+          .connect(investor1)
+          .uploadDocument(1, "Contract", "Legal", "QmXYZ")
+      ).to.be.revertedWith("Non sei il proprietario");
+    });
+
+    it("Should get property documents", async function () {
+      await realEstate.uploadDocument(1, "Doc1", "Type1", "Hash1");
+      await realEstate.uploadDocument(1, "Doc2", "Type2", "Hash2");
+
+      const docs = await realEstate.getPropertyDocuments(1);
+      expect(docs.length).to.equal(2);
+      expect(docs[0].name).to.equal("Doc1");
+      expect(docs[1].name).to.equal("Doc2");
+    });
+  });
+
+  describe("Yield Management", function () {
+    beforeEach(async function () {
+      await realEstate.listProperty(
+        "Yield Property",
+        "Description",
+        "Location",
+        PROPERTY_VALUE,
+        100,
+        "url",
+        ESTIMATED_YIELD
+      );
+    });
+
+    it("Should allow owner to update yield", async function () {
+      const newYield = 600; // 6%
+
+      await expect(realEstate.updateEstimatedYield(1, newYield))
+        .to.emit(realEstate, "YieldUpdated")
+        .withArgs(1, newYield);
+
+      const property = await realEstate.getProperty(1);
+      expect(property.estimatedAnnualYield).to.equal(newYield);
+    });
+
+    it("Should fail to update yield if not owner", async function () {
+      await expect(
+        realEstate.connect(investor1).updateEstimatedYield(1, 600)
+      ).to.be.revertedWith("Non sei il proprietario");
     });
   });
 });

@@ -1,10 +1,11 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { RealEstate } from "../typechain-types";
+import { RealEstate, MockUSDC } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("RealEstate - Fractional Property Tokenization", function () {
   let realEstate: RealEstate;
+  let mockUSDC: MockUSDC;
   let owner: SignerWithAddress;
   let investor1: SignerWithAddress;
   let investor2: SignerWithAddress;
@@ -17,14 +18,27 @@ describe("RealEstate - Fractional Property Tokenization", function () {
   beforeEach(async function () {
     [owner, investor1, investor2, propertyManager] = await ethers.getSigners();
 
+    // Deploy Mock USDC
+    const MockUSDCFactory = await ethers.getContractFactory("MockUSDC");
+    mockUSDC = (await MockUSDCFactory.deploy()) as unknown as MockUSDC;
+    await mockUSDC.waitForDeployment();
+
+    // Deploy RealEstate with USDC address
     const RealEstateFactory = await ethers.getContractFactory("RealEstate");
-    realEstate = (await RealEstateFactory.deploy()) as unknown as RealEstate;
+    realEstate = (await RealEstateFactory.deploy(await mockUSDC.getAddress())) as unknown as RealEstate;
     await realEstate.waitForDeployment();
+
+    // Set KYC verification for test accounts
+    await realEstate.setKYCVerification(owner.address, true);
+    await realEstate.setKYCVerification(investor1.address, true);
+    await realEstate.setKYCVerification(investor2.address, true);
+    await realEstate.setKYCVerification(propertyManager.address, true);
   });
 
   describe("Deployment", function () {
-    it("Should set the right owner", async function () {
-      expect(await realEstate.owner()).to.equal(owner.address);
+    it("Should set the right admin role", async function () {
+      const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
+      expect(await realEstate.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.be.true;
     });
 
     it("Should have correct name and symbol", async function () {
@@ -34,6 +48,10 @@ describe("RealEstate - Fractional Property Tokenization", function () {
 
     it("Should have correct token price", async function () {
       expect(await realEstate.TOKEN_PRICE_USD()).to.equal(TOKEN_PRICE_USD);
+    });
+
+    it("Should have USDC token configured", async function () {
+      expect(await realEstate.usdcToken()).to.equal(await mockUSDC.getAddress());
     });
   });
 
@@ -72,7 +90,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
           "url",
           ESTIMATED_YIELD
         )
-      ).to.be.revertedWith("Il valore deve essere maggiore di zero");
+      ).to.be.revertedWith("Value must be greater than zero");
     });
 
     it("Should fail to list property with zero area", async function () {
@@ -86,7 +104,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
           "url",
           ESTIMATED_YIELD
         )
-      ).to.be.revertedWith("L'area deve essere maggiore di zero");
+      ).to.be.revertedWith("Area must be greater than zero");
     });
 
     it("Should mint NFT to property owner", async function () {
@@ -163,7 +181,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
           .buyTokens(1, 250, tokenPriceETH, {
             value: tokenPriceETH * 250n,
           })
-      ).to.be.revertedWith("Token insufficienti nella pool");
+      ).to.be.revertedWith("Insufficient tokens in pool");
     });
 
     it("Should fail to buy with insufficient funds", async function () {
@@ -175,7 +193,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
           .buyTokens(1, 10, tokenPriceETH, {
             value: tokenPriceETH * 5n, // Only paying for 5
           })
-      ).to.be.revertedWith("Fondi insufficienti");
+      ).to.be.revertedWith("Insufficient funds");
     });
 
     it("Should complete pool when all tokens sold", async function () {
@@ -195,19 +213,42 @@ describe("RealEstate - Fractional Property Tokenization", function () {
       expect(property.isActive).to.be.false;
     });
 
-    it("Should transfer funds to property owner", async function () {
+    it("Should queue funds for property owner withdrawal", async function () {
       const tokenPriceETH = ethers.parseEther("0.001");
       const tokenAmount = 10;
       const totalCost = tokenPriceETH * BigInt(tokenAmount);
-
-      const initialBalance = await ethers.provider.getBalance(owner.address);
 
       await realEstate
         .connect(investor1)
         .buyTokens(1, tokenAmount, tokenPriceETH, { value: totalCost });
 
+      // Check pending withdrawals (minus 2.5% platform fee)
+      const platformFee = (totalCost * 250n) / 10000n;
+      const expectedPending = totalCost - platformFee;
+
+      const pendingWithdrawal = await realEstate.pendingWithdrawals(owner.address);
+      expect(pendingWithdrawal).to.equal(expectedPending);
+    });
+
+    it("Should allow owner to withdraw funds", async function () {
+      const tokenPriceETH = ethers.parseEther("0.001");
+      const tokenAmount = 10;
+      const totalCost = tokenPriceETH * BigInt(tokenAmount);
+
+      await realEstate
+        .connect(investor1)
+        .buyTokens(1, tokenAmount, tokenPriceETH, { value: totalCost });
+
+      const initialBalance = await ethers.provider.getBalance(owner.address);
+      const tx = await realEstate.withdraw();
+      const receipt = await tx.wait();
+      const gasCost = receipt!.gasUsed * receipt!.gasPrice;
+
       const finalBalance = await ethers.provider.getBalance(owner.address);
-      expect(finalBalance).to.equal(initialBalance + totalCost);
+      const platformFee = (totalCost * 250n) / 10000n;
+      const expectedWithdrawal = totalCost - platformFee;
+
+      expect(finalBalance).to.equal(initialBalance + expectedWithdrawal - gasCost);
     });
   });
 
@@ -236,7 +277,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
     it("Should fail to deactivate if not owner", async function () {
       await expect(
         realEstate.connect(investor1).deactivatePool(1)
-      ).to.be.revertedWith("Non sei il proprietario");
+      ).to.be.revertedWith("Not property owner");
     });
 
     it("Should allow owner to reactivate pool", async function () {
@@ -257,7 +298,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
         });
 
       await expect(realEstate.reactivatePool(1)).to.be.revertedWith(
-        "Tutti i token sono gia stati venduti"
+        "All tokens are already sold"
       );
     });
   });
@@ -386,7 +427,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
         realEstate
           .connect(investor1)
           .uploadDocument(1, "Contract", "Legal", "QmXYZ")
-      ).to.be.revertedWith("Non sei il proprietario");
+      ).to.be.revertedWith("Not property owner");
     });
 
     it("Should get property documents", async function () {
@@ -427,7 +468,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
     it("Should fail to update yield if not owner", async function () {
       await expect(
         realEstate.connect(investor1).updateEstimatedYield(1, 600)
-      ).to.be.revertedWith("Non sei il proprietario");
+      ).to.be.revertedWith("Not property owner");
     });
   });
 });

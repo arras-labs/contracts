@@ -931,6 +931,8 @@ contract RealEstate is ERC721, AccessControl, ReentrancyGuard, Pausable {
                 index++;
             }
         }
+
+        return (investedProperties, tokenAmounts);
     }
 
     /**

@@ -920,8 +920,8 @@ contract RealEstate is ERC721, AccessControl, ReentrancyGuard, Pausable {
             }
         }
 
-        Property[] memory investedProperties = new Property[](investmentCount);
-        uint256[] memory tokenAmounts = new uint256[](investmentCount);
+        investedProperties = new Property[](investmentCount);
+        tokenAmounts = new uint256[](investmentCount);
         uint256 index = 0;
 
         for (uint256 i = 1; i <= totalProperties; i++) {
@@ -931,8 +931,6 @@ contract RealEstate is ERC721, AccessControl, ReentrancyGuard, Pausable {
                 index++;
             }
         }
-
-        return (investedProperties, tokenAmounts);
     }
 
     /**

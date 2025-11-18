@@ -146,7 +146,7 @@ describe("RealEstate - Fractional Property Tokenization", function () {
 
       await expect(tx)
         .to.emit(realEstate, "TokensPurchased")
-        .withArgs(1, investor1.address, tokenAmount, totalCost);
+        .withArgs(1, investor1.address, tokenAmount, totalCost, false);
 
       const balance = await realEstate.getInvestorTokens(1, investor1.address);
       expect(balance).to.equal(tokenAmount);

@@ -113,6 +113,16 @@ export const CONTRACT_ABI = [
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -132,6 +142,11 @@ export const CONTRACT_ABI = [
       }
     ],
     "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
@@ -244,6 +259,19 @@ export const CONTRACT_ABI = [
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "uint256",
         "name": "propertyId",
@@ -257,6 +285,25 @@ export const CONTRACT_ABI = [
       }
     ],
     "name": "PoolCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldPrice",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newPrice",
+        "type": "uint256"
+      }
+    ],
+    "name": "PricePerTokenUpdated",
     "type": "event"
   },
   {
@@ -369,6 +416,19 @@ export const CONTRACT_ABI = [
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "uint256",
         "name": "propertyId",
@@ -444,11 +504,6 @@ export const CONTRACT_ABI = [
       {
         "internalType": "uint256",
         "name": "_tokenAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_tokenPriceETH",
         "type": "uint256"
       }
     ],
@@ -1171,6 +1226,39 @@ export const CONTRACT_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pricePerTokenWei",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -1498,6 +1586,13 @@ export const CONTRACT_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -1511,6 +1606,19 @@ export const CONTRACT_ABI = [
       }
     ],
     "name": "updateEstimatedYield",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_newPriceWei",
+        "type": "uint256"
+      }
+    ],
+    "name": "updatePricePerToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

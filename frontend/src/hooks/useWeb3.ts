@@ -31,6 +31,8 @@ export const useWeb3 = () => {
   const [loading, setLoading] = useState(false);
   const [contract, setContract] = useState<Contract | null>(null);
   const [contractReady, setContractReady] = useState(false);
+  const [pricePerTokenWei, setPricePerTokenWei] = useState<bigint>(BigInt(0));
+  const [isPaused, setIsPaused] = useState(false);
 
   // Inizializza il contratto
   const initContract = useCallback(async () => {
@@ -46,6 +48,18 @@ export const useWeb3 = () => {
       );
       setContract(contractInstance);
       setContractReady(true);
+
+      // Carica il prezzo per token dal contratto
+      const price = await contractInstance.pricePerTokenWei();
+      setPricePerTokenWei(price);
+
+      // Verifica se il contratto è in pausa
+      try {
+        const paused = await contractInstance.paused();
+        setIsPaused(paused);
+      } catch (e) {
+        setIsPaused(false);
+      }
     } catch (error) {
       console.error("❌ Errore inizializzazione contratto:", error);
       toast.error("Errore durante l'inizializzazione del contratto");
@@ -225,10 +239,14 @@ export const useWeb3 = () => {
     }
   };
 
-  // Calcola il prezzo di un token in ETH basato sul tasso USD/ETH
+  // Calcola il prezzo di un token in ETH dal contratto
   const calculateTokenPriceETH = (): string => {
-    const priceInETH = TOKEN_PRICE_USD / USD_TO_ETH_RATE;
-    return priceInETH.toFixed(6);
+    if (pricePerTokenWei === BigInt(0)) {
+      // Fallback se non ancora caricato
+      const priceInETH = TOKEN_PRICE_USD / USD_TO_ETH_RATE;
+      return priceInETH.toFixed(6);
+    }
+    return formatEther(pricePerTokenWei);
   };
 
   // Acquista token di una proprietà
@@ -241,19 +259,20 @@ export const useWeb3 = () => {
       return false;
     }
 
+    if (isPaused) {
+      toast.error("Il contratto è in pausa");
+      return false;
+    }
+
     setLoading(true);
     try {
-      const tokenPriceETH = parseEther(calculateTokenPriceETH());
-      const totalCost = tokenPriceETH * BigInt(tokenAmount);
+      // Ottieni il prezzo dal contratto
+      const price = await contract.pricePerTokenWei();
+      const totalCost = price * BigInt(tokenAmount);
 
-      const tx = await contract.buyTokens(
-        propertyId,
-        tokenAmount,
-        tokenPriceETH,
-        {
-          value: totalCost,
-        }
-      );
+      const tx = await contract.buyTokens(propertyId, tokenAmount, {
+        value: totalCost,
+      });
       toast.loading("Acquisto in corso...", { id: "buy-tokens-tx" });
       await tx.wait();
       toast.success(`${tokenAmount} token acquistati con successo!`, {
@@ -496,10 +515,94 @@ export const useWeb3 = () => {
     }
   };
 
+  // Metti in pausa il contratto (solo owner)
+  const pauseContract = async (): Promise<boolean> => {
+    if (!contract) {
+      toast.error("Contratto non inizializzato");
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const tx = await contract.pause();
+      toast.loading("Messa in pausa in corso...", { id: "pause-tx" });
+      await tx.wait();
+      toast.success("Contratto messo in pausa!", { id: "pause-tx" });
+      setIsPaused(true);
+      return true;
+    } catch (error: any) {
+      console.error("Errore nella pausa:", error);
+      toast.error(error.reason || "Errore durante la pausa", {
+        id: "pause-tx",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Riprendi il contratto (solo owner)
+  const unpauseContract = async (): Promise<boolean> => {
+    if (!contract) {
+      toast.error("Contratto non inizializzato");
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const tx = await contract.unpause();
+      toast.loading("Ripristino in corso...", { id: "unpause-tx" });
+      await tx.wait();
+      toast.success("Contratto ripristinato!", { id: "unpause-tx" });
+      setIsPaused(false);
+      return true;
+    } catch (error: any) {
+      console.error("Errore nel ripristino:", error);
+      toast.error(error.reason || "Errore durante il ripristino", {
+        id: "unpause-tx",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Aggiorna il prezzo per token (solo owner)
+  const updatePricePerToken = async (newPriceWei: bigint): Promise<boolean> => {
+    if (!contract) {
+      toast.error("Contratto non inizializzato");
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const tx = await contract.updatePricePerToken(newPriceWei);
+      toast.loading("Aggiornamento prezzo in corso...", {
+        id: "update-price-tx",
+      });
+      await tx.wait();
+      toast.success("Prezzo aggiornato con successo!", {
+        id: "update-price-tx",
+      });
+      setPricePerTokenWei(newPriceWei);
+      return true;
+    } catch (error: any) {
+      console.error("Errore nell'aggiornamento prezzo:", error);
+      toast.error(error.reason || "Errore durante l'aggiornamento", {
+        id: "update-price-tx",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     walletState,
     loading,
     contractReady,
+    isPaused,
+    pricePerTokenWei,
     connectWallet,
     disconnectWallet,
     getActiveProperties,
@@ -515,6 +618,9 @@ export const useWeb3 = () => {
     getPropertyDocuments,
     uploadDocument,
     getInvestorTokens,
+    pauseContract,
+    unpauseContract,
+    updatePricePerToken,
     TOKEN_PRICE_USD,
     USD_TO_ETH_RATE,
   };

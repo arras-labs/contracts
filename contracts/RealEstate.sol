@@ -3,15 +3,18 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title RealEstate
  * @dev Smart contract per gestire proprietà immobiliari tokenizzate frazionalmente su Polygon
  * Ogni immobile ha una pool di token che gli utenti possono acquistare
  */
-contract RealEstate is ERC721, Ownable {
+contract RealEstate is ERC721, Ownable, ReentrancyGuard, Pausable {
     uint256 private _propertyIds;
     uint256 public constant TOKEN_PRICE_USD = 50; // Prezzo di ogni token in USD
+    uint256 public pricePerTokenWei = 0.01 ether; // Prezzo di un token in Wei (modificabile dal owner)
     
     struct Property {
         uint256 id;
@@ -95,6 +98,10 @@ contract RealEstate is ERC721, Ownable {
         uint256 indexed propertyId,
         uint256 newYield
     );
+    event PricePerTokenUpdated(
+        uint256 oldPrice,
+        uint256 newPrice
+    );
     
     constructor() ERC721("RealEstateNFT", "RENFT") Ownable(msg.sender) {}
     
@@ -151,15 +158,14 @@ contract RealEstate is ERC721, Ownable {
      * @dev Acquista token di una proprietà
      * @param _propertyId ID della proprietà
      * @param _tokenAmount Numero di token da acquistare
-     * @param _tokenPriceETH Prezzo di un singolo token in ETH (calcolato dal frontend)
      */
     function buyTokens(
         uint256 _propertyId, 
-        uint256 _tokenAmount,
-        uint256 _tokenPriceETH
-    ) public payable {
+        uint256 _tokenAmount
+    ) public payable nonReentrant whenNotPaused {
         Property storage property = properties[_propertyId];
         
+        // Checks
         require(_propertyId > 0 && _propertyId <= _propertyIds, "Proprieta non esistente");
         require(property.isActive, "Pool non attiva");
         require(_tokenAmount > 0, "Devi acquistare almeno 1 token");
@@ -168,13 +174,10 @@ contract RealEstate is ERC721, Ownable {
             "Token insufficienti nella pool"
         );
         
-        uint256 totalCost = _tokenPriceETH * _tokenAmount;
-        require(msg.value >= totalCost, "Fondi insufficienti");
+        uint256 totalCost = pricePerTokenWei * _tokenAmount;
+        require(msg.value == totalCost, "Importo esatto richiesto");
         
-        // Trasferisce i fondi al proprietario
-        payable(property.owner).transfer(msg.value);
-        
-        // Aggiorna il balance dei token per l'investitore
+        // Effects - Aggiorna lo stato PRIMA del trasferimento
         if (propertyTokenBalances[_propertyId][msg.sender] == 0 && !isInvestor[_propertyId][msg.sender]) {
             propertyInvestors[_propertyId].push(msg.sender);
             isInvestor[_propertyId][msg.sender] = true;
@@ -190,12 +193,16 @@ contract RealEstate is ERC721, Ownable {
             property.isActive = false;
             emit PoolCompleted(_propertyId, property.totalValueUSD);
         }
+        
+        // Interactions - Trasferisce i fondi al proprietario DOPO aver aggiornato lo stato
+        (bool success, ) = payable(property.owner).call{value: msg.value}("");
+        require(success, "Trasferimento fallito");
     }
     
     /**
      * @dev Disattiva una pool (solo il proprietario)
      */
-    function deactivatePool(uint256 _propertyId) public {
+    function deactivatePool(uint256 _propertyId) public whenNotPaused {
         Property storage property = properties[_propertyId];
         
         require(ownerOf(_propertyId) == msg.sender, "Non sei il proprietario");
@@ -209,7 +216,7 @@ contract RealEstate is ERC721, Ownable {
     /**
      * @dev Riattiva una pool (solo il proprietario)
      */
-    function reactivatePool(uint256 _propertyId) public {
+    function reactivatePool(uint256 _propertyId) public whenNotPaused {
         Property storage property = properties[_propertyId];
         
         require(ownerOf(_propertyId) == msg.sender, "Non sei il proprietario");
@@ -417,12 +424,38 @@ contract RealEstate is ERC721, Ownable {
     /**
      * @dev Aggiorna il rendimento stimato (solo owner)
      */
-    function updateEstimatedYield(uint256 _propertyId, uint256 _newYield) public {
+    function updateEstimatedYield(uint256 _propertyId, uint256 _newYield) public whenNotPaused {
         require(_propertyId > 0 && _propertyId <= _propertyIds, "Proprieta non esistente");
         require(ownerOf(_propertyId) == msg.sender, "Non sei il proprietario");
         
         properties[_propertyId].estimatedAnnualYield = _newYield;
         
         emit YieldUpdated(_propertyId, _newYield);
+    }
+    
+    /**
+     * @dev Aggiorna il prezzo per token (solo contract owner)
+     */
+    function updatePricePerToken(uint256 _newPriceWei) public onlyOwner {
+        require(_newPriceWei > 0, "Il prezzo deve essere maggiore di zero");
+        
+        uint256 oldPrice = pricePerTokenWei;
+        pricePerTokenWei = _newPriceWei;
+        
+        emit PricePerTokenUpdated(oldPrice, _newPriceWei);
+    }
+    
+    /**
+     * @dev Pausa il contratto (solo contract owner)
+     */
+    function pause() public onlyOwner {
+        _pause();
+    }
+    
+    /**
+     * @dev Riprende il contratto (solo contract owner)
+     */
+    function unpause() public onlyOwner {
+        _unpause();
     }
 }

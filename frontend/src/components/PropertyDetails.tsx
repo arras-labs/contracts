@@ -4,6 +4,8 @@ import type { Property, PropertyDocument, PoolInfo } from "../types";
 import { YieldSection } from "./YieldSection";
 import { DocumentsSection } from "./DocumentsSection";
 import { TokenPurchaseModal } from "./TokenPurchaseModal";
+import { ImageCarousel } from "./ImageCarousel";
+import { getPropertyImages } from "../services/propertyImages";
 
 interface PropertyDetailsProps {
   walletState: { account: string | null; isConnected: boolean };
@@ -99,6 +101,11 @@ export const PropertyDetails = ({
     );
   }
 
+  // Recupera tutte le immagini salvate in localStorage
+  const allImages = getPropertyImages(property.id.toString());
+  // Se non ci sono immagini salvate, usa quella del contratto
+  const images = allImages.length > 0 ? allImages : [property.imageUrl];
+
   const isOwner =
     property.owner.toLowerCase() === walletState.account?.toLowerCase();
   const percentageComplete = Number(poolInfo.percentageComplete);
@@ -108,12 +115,14 @@ export const PropertyDetails = ({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header con immagine */}
       <div className="relative h-96 bg-gray-900">
-        <img
-          src={property.imageUrl}
-          alt={property.name}
-          className="w-full h-full object-cover opacity-75"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+        <div className="w-full h-full opacity-75">
+          <ImageCarousel
+            images={images}
+            alt={property.name}
+            showControls={true}
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none"></div>
 
         {/* Pulsante indietro */}
         <button

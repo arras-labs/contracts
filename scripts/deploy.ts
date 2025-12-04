@@ -63,17 +63,6 @@ async function main() {
         "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
       estimatedYield: 600, // 6.0% annuo
     },
-    {
-      name: "Loft Design",
-      description:
-        "Loft in zona industriale riconvertita, design moderno e minimalista. Open space, 1 bagno.",
-      location: "Torino, Piemonte",
-      totalValueUSD: 180000, // $180,000 = 3,600 token
-      area: 180,
-      imageUrl:
-        "https://images.unsplash.com/photo-1502672260066-6bc35f0b3764?w=800",
-      estimatedYield: 500, // 5.0% annuo
-    },
   ];
 
   for (const property of properties) {

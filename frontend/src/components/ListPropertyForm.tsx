@@ -13,6 +13,7 @@ interface ListPropertyFormProps {
     totalValueUSD: string;
     area: string;
     imageUrl: string;
+    allImageUrls: string[];
   }) => Promise<void>;
   onCancel: () => void;
   loading: boolean;
@@ -95,11 +96,14 @@ export const ListPropertyForm = ({
 
       // Usa la prima immagine come immagine principale
       const mainImageUrl = uploadedImages[0].url;
+      // Prendi tutte le URL
+      const allImageUrls = uploadedImages.map((img) => img.url);
 
       // Invia il form con tutte le URL
       await onSubmit({
         ...formData,
         imageUrl: mainImageUrl,
+        allImageUrls: allImageUrls,
       });
 
       // Reset delle immagini

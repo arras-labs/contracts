@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { Property } from "../types";
+import { ImageCarousel } from "./ImageCarousel";
+import { getPropertyImages } from "../services/propertyImages";
 
 interface PropertyCardProps {
   property: Property;
@@ -19,6 +21,12 @@ export const PropertyCard = ({
   tokenPriceUSD,
 }: PropertyCardProps) => {
   const navigate = useNavigate();
+
+  // Recupera tutte le immagini salvate in localStorage
+  const allImages = getPropertyImages(property.id.toString());
+  // Se non ci sono immagini salvate, usa quella del contratto
+  const images = allImages.length > 0 ? allImages : [property.imageUrl];
+
   // Calcola la percentuale di completamento
   const percentageComplete =
     property.totalTokens > 0
@@ -32,28 +40,24 @@ export const PropertyCard = ({
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 animate-fade-in">
       <div className="relative h-64 overflow-hidden">
-        <img
-          src={property.imageUrl}
-          alt={property.name}
-          className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-        />
+        <ImageCarousel images={images} alt={property.name} />
         {property.isActive && (
-          <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+          <span className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
             Pool Attiva
           </span>
         )}
         {!property.isActive && (
-          <span className="absolute top-4 right-4 bg-gray-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+          <span className="absolute top-4 right-4 bg-gray-500 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
             Pool Chiusa
           </span>
         )}
         {isOwner && (
-          <span className="absolute top-4 left-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+          <span className="absolute top-4 left-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
             Tua Proprietà
           </span>
         )}
         {percentageComplete === 100 && (
-          <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+          <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg z-10">
             🎉 Pool Completata!
           </span>
         )}

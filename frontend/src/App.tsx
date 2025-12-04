@@ -7,6 +7,7 @@ import { PropertyCard } from "./components/PropertyCard";
 import { ListPropertyForm } from "./components/ListPropertyForm";
 import { TokenPurchaseModal } from "./components/TokenPurchaseModal";
 import { PropertyDetails } from "./components/PropertyDetails";
+import { savePropertyImages } from "./services/propertyImages";
 
 function App() {
   const {
@@ -84,6 +85,7 @@ function App() {
     totalValueUSD: string;
     area: string;
     imageUrl: string;
+    allImageUrls: string[];
   }) => {
     const result = await listProperty(
       data.name,
@@ -97,6 +99,11 @@ function App() {
     if (result.success) {
       setShowListForm(false);
       await loadProperties();
+
+      // Salva tutte le immagini in localStorage usando il propertyId dall'evento
+      if (result.propertyId && data.allImageUrls.length > 0) {
+        savePropertyImages(result.propertyId, data.allImageUrls);
+      }
     }
   };
 

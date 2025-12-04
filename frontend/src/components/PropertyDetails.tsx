@@ -265,7 +265,7 @@ export const PropertyDetails = ({
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                📁 Documenti ({documents.length})
+                📁 Documenti
               </button>
             </nav>
           </div>
@@ -379,6 +379,7 @@ export const PropertyDetails = ({
             {activeTab === "documents" && (
               <DocumentsSection
                 propertyId={property.id}
+                propertyName={property.name}
                 documents={documents}
                 isOwner={isOwner}
                 onUploadDocument={handleUploadDocument}

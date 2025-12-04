@@ -82,37 +82,23 @@ esac
 echo ""
 
 # 1. Installa dipendenze
-print_step "Installazione dipendenze backend..."
+print_step "Installazione dipendenze..."
 npm install
-print_success "Dipendenze backend installate"
-
-print_step "Installazione dipendenze frontend..."
-cd frontend
-npm install
-cd ..
-print_success "Dipendenze frontend installate"
+print_success "Dipendenze installate"
 
 # 2. Crea file .env
 if [ ! -f .env ]; then
     print_step "Creazione file .env..."
     cp .env.example .env
     
-    # Genera una chiave privata di test (SOLO PER TEST!)
-    PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    # Chiave privata dell'account #0 di Ganache (SOLO PER TEST!)
+    PRIVATE_KEY="0x734a7c7c580e464466f5c57ae6c86fa1f9a5fb010790e7911d56e9d42390e090"
     sed -i "s/your_private_key_here/$PRIVATE_KEY/" .env
     
     print_success "File .env creato con chiave di test"
     print_warning "⚠️  Usa questa chiave SOLO per test locale!"
 else
     print_warning "File .env già esistente, skippo..."
-fi
-
-if [ ! -f frontend/.env ]; then
-    print_step "Creazione frontend/.env..."
-    cp frontend/.env.example frontend/.env
-    print_success "File frontend/.env creato"
-else
-    print_warning "File frontend/.env già esistente, skippo..."
 fi
 
 # 3. Compila contratti
@@ -150,7 +136,7 @@ fi
 
 # 5. Deploy contratto
 print_step "Deploy smart contract su $BLOCKCHAIN_NAME..."
-DEPLOY_OUTPUT=$(npm run deploy $NETWORK_FLAG 2>&1 || npx hardhat run scripts/deploy.ts $NETWORK_FLAG 2>&1)
+DEPLOY_OUTPUT=$(npx hardhat run scripts/deploy.ts $NETWORK_FLAG 2>&1)
 echo "$DEPLOY_OUTPUT"
 
 # Estrai l'indirizzo del contratto
@@ -158,33 +144,8 @@ CONTRACT_ADDRESS=$(echo "$DEPLOY_OUTPUT" | grep -o '0x[a-fA-F0-9]\{40\}' | head 
 
 if [ -n "$CONTRACT_ADDRESS" ]; then
     print_success "Contratto deployato a: $CONTRACT_ADDRESS"
-    
-    # Aggiorna frontend/.env
-    print_step "Aggiornamento frontend/.env..."
-    if grep -q "VITE_CONTRACT_ADDRESS=" frontend/.env; then
-        sed -i "s/VITE_CONTRACT_ADDRESS=.*/VITE_CONTRACT_ADDRESS=$CONTRACT_ADDRESS/" frontend/.env
-    else
-        echo "VITE_CONTRACT_ADDRESS=$CONTRACT_ADDRESS" >> frontend/.env
-    fi
-    
-    # Aggiorna CHAIN_ID nel frontend
-    if grep -q "VITE_CHAIN_ID=" frontend/.env; then
-        sed -i "s/VITE_CHAIN_ID=.*/VITE_CHAIN_ID=$CHAIN_ID/" frontend/.env
-    else
-        echo "VITE_CHAIN_ID=$CHAIN_ID" >> frontend/.env
-    fi
-    
-    # Aggiorna NETWORK_NAME nel frontend
-    if grep -q "VITE_NETWORK_NAME=" frontend/.env; then
-        sed -i "s/VITE_NETWORK_NAME=.*/VITE_NETWORK_NAME=$BLOCKCHAIN_NAME/" frontend/.env
-    else
-        echo "VITE_NETWORK_NAME=$BLOCKCHAIN_NAME" >> frontend/.env
-    fi
-    
-    print_success "Frontend configurato"
 else
     print_error "Impossibile estrarre indirizzo contratto"
-    print_warning "Configura manualmente frontend/.env"
 fi
 
 # 6. Riepilogo
@@ -201,9 +162,9 @@ echo "  • Chain ID: $CHAIN_ID"
 echo ""
 
 if [ "$BLOCKCHAIN" = "ganache" ]; then
-    echo "🔑 Account Ganache (per MetaMask):"
-    echo "  Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-    echo "  Address: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    echo "🔑 Account Ganache #0 (per MetaMask):"
+    echo "  Private Key: 0x734a7c7c580e464466f5c57ae6c86fa1f9a5fb010790e7911d56e9d42390e090"
+    echo "  Address: 0x432137D963f5d16a4f35e1447EA657d0596b2067"
     echo ""
     echo "📝 Configura MetaMask:"
     echo "  • Rete: Ganache Local"
@@ -228,21 +189,7 @@ echo ""
 echo "🚀 Prossimi passi:"
 echo "  1. Configura MetaMask (vedi sopra)"
 echo "  2. Importa/Usa account con fondi"
-echo "  3. Avvia frontend: cd frontend && npm run dev"
-echo "  4. Apri browser: http://localhost:5173"
+echo "  3. Copia CONTRACT_ADDRESS nel .env della landing-page"
 echo ""
 echo "================================================"
 echo ""
-
-read -p "Vuoi avviare il frontend ora? (y/n): " start_frontend
-
-if [ "$start_frontend" = "y" ]; then
-    print_step "Avvio frontend..."
-    cd frontend
-    npm run dev
-else
-    echo ""
-    echo "Per avviare il frontend in seguito:"
-    echo "  cd frontend && npm run dev"
-    echo ""
-fi

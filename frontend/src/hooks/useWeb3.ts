@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BrowserProvider, Contract, formatEther, parseEther } from "ethers";
+import { BrowserProvider, Contract, formatEther } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, CHAIN_ID } from "../utils/constants";
 import type {
   Property,
@@ -299,10 +299,10 @@ export const useWeb3 = () => {
     area: string,
     imageUrl: string,
     estimatedYield: string = "500" // Default 5.00%
-  ) => {
+  ): Promise<{ success: boolean; propertyId?: string }> => {
     if (!contract) {
       toast.error("Contratto non inizializzato");
-      return false;
+      return { success: false };
     }
 
     setLoading(true);
@@ -317,15 +317,35 @@ export const useWeb3 = () => {
         BigInt(estimatedYield)
       );
       toast.loading("Pubblicazione in corso...", { id: "list-tx" });
-      await tx.wait();
+      const receipt = await tx.wait();
+      
+      // Estrai propertyId dall'evento PropertyListed
+      let propertyId: string | undefined;
+      if (receipt && receipt.logs) {
+        for (const log of receipt.logs) {
+          try {
+            const parsed = contract.interface.parseLog({
+              topics: [...log.topics],
+              data: log.data,
+            });
+            if (parsed && parsed.name === "PropertyListed") {
+              propertyId = parsed.args.propertyId.toString();
+              break;
+            }
+          } catch (e) {
+            // Log non parsabile, continua
+          }
+        }
+      }
+      
       toast.success("Proprietà pubblicata con successo!", { id: "list-tx" });
-      return true;
+      return { success: true, propertyId };
     } catch (error: any) {
       console.error("Errore nella pubblicazione:", error);
       toast.error(error.reason || "Errore durante la pubblicazione", {
         id: "list-tx",
       });
-      return false;
+      return { success: false };
     } finally {
       setLoading(false);
     }

@@ -85,7 +85,7 @@ function App() {
     area: string;
     imageUrl: string;
   }) => {
-    const success = await listProperty(
+    const result = await listProperty(
       data.name,
       data.description,
       data.location,
@@ -93,7 +93,8 @@ function App() {
       data.area,
       data.imageUrl
     );
-    if (success) {
+
+    if (result.success) {
       setShowListForm(false);
       await loadProperties();
     }

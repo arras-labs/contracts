@@ -21,18 +21,9 @@ export const CONTRACT_ABI = ${JSON.stringify(abi, null, 2)} as const;
 `;
 
 // Scrivi il file constants.ts
-const constantsPath = path.join(
-  __dirname,
-  "../frontend/src/utils/constants.ts"
-);
+const constantsPath = "../landing-page/src/utils-marketplace/constants.ts";
 fs.writeFileSync(constantsPath, constantsContent, "utf8");
 
-console.log("✅ ABI aggiornato con successo in constants.ts!");
 console.log(
-  `   Funzioni trovate: ${
-    abi.filter((item) => item.type === "function").length
-  }`
-);
-console.log(
-  `   Eventi trovati: ${abi.filter((item) => item.type === "event").length}`
+  "✅ ABI aggiornato in landing-page/src/utils-marketplace/constants.ts"
 );

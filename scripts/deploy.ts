@@ -23,7 +23,7 @@ async function main() {
       name: "Villa Moderna con Piscina",
       description:
         "Splendida villa moderna con piscina, giardino e vista mare. 4 camere da letto, 3 bagni.",
-      location: "Milano, Lombardia",
+      propertyAddress: "Via Monte Napoleone 8, 20121 Milano, Italy",
       totalValueUSD: 500000, // $500,000 = 10,000 token
       area: 350,
       imageUrl:
@@ -34,7 +34,7 @@ async function main() {
       name: "Appartamento Centro Storico",
       description:
         "Elegante appartamento ristrutturato nel cuore del centro storico. 2 camere, 1 bagno.",
-      location: "Roma, Lazio",
+      propertyAddress: "Via dei Condotti 85, 00187 Roma, Italy",
       totalValueUSD: 250000, // $250,000 = 5,000 token
       area: 120,
       imageUrl:
@@ -45,7 +45,7 @@ async function main() {
       name: "Attico di Lusso",
       description:
         "Attico di lusso con terrazza panoramica di 200mq. 3 camere, 2 bagni, doppio garage.",
-      location: "Firenze, Toscana",
+      propertyAddress: "Piazza della Signoria 1, 50122 Firenze, Italy",
       totalValueUSD: 750000, // $750,000 = 15,000 token
       area: 280,
       imageUrl:
@@ -56,7 +56,7 @@ async function main() {
       name: "Casale in Campagna",
       description:
         "Casale rustico completamente ristrutturato con terreno di 5000mq. 5 camere, 3 bagni.",
-      location: "Siena, Toscana",
+      propertyAddress: "Strada Provinciale 146, 53100 Siena, Italy",
       totalValueUSD: 350000, // $350,000 = 7,000 token
       area: 400,
       imageUrl:
@@ -69,7 +69,7 @@ async function main() {
     const tx = await realEstate.listProperty(
       property.name,
       property.description,
-      property.location,
+      property.propertyAddress,
       property.totalValueUSD,
       property.area,
       property.imageUrl,

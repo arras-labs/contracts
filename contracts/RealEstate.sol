@@ -20,7 +20,7 @@ contract RealEstate is ERC721, Ownable, ReentrancyGuard, Pausable {
         uint256 id;
         string name;
         string description;
-        string location;
+        string propertyAddress;
         uint256 totalValueUSD; // Valore totale in USD (prezzo + spese gestione)
         uint256 area; // in metri quadri
         address owner;
@@ -113,7 +113,7 @@ contract RealEstate is ERC721, Ownable, ReentrancyGuard, Pausable {
     function listProperty(
         string memory _name,
         string memory _description,
-        string memory _location,
+        string memory _propertyAddress,
         uint256 _totalValueUSD,
         uint256 _area,
         string memory _imageUrl,
@@ -137,7 +137,7 @@ contract RealEstate is ERC721, Ownable, ReentrancyGuard, Pausable {
             id: newPropertyId,
             name: _name,
             description: _description,
-            location: _location,
+            propertyAddress: _propertyAddress,
             totalValueUSD: _totalValueUSD,
             area: _area,
             owner: msg.sender,
